@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokémon FireRed - EmulatorJS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+
+        #container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #game {
+            width: 100%;
+            height: 100%;
+            max-width: 1200px;
+            max-height: 800px;
+        }
+
+        /* Responsive design for mobile */
+        @media (max-width: 768px) {
+            #game {
+                max-width: 100%;
+                max-height: 100%;
+            }
+        }
+
+        /* Loading screen */
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #fff;
+            z-index: 1000;
+        }
+
+        #loading h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        #loading p {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid #fff;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Error message */
+        #error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #ff4444;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 80%;
+            z-index: 1001;
+        }
+
+        #error h2 {
+            font-size: 2rem;
+            margin-bottom: 15px;
+        }
+
+        #error p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="loading">
+            <h1>Pokémon FireRed</h1>
+            <p>Loading EmulatorJS...</p>
+            <div class="spinner"></div>
+        </div>
+
+        <div id="error" class="hidden">
+            <h2>Error Loading Game</h2>
+            <p id="error-message"></p>
+        </div>
+
+        <!-- EmulatorJS game container -->
+        <div id="game"></div>
+    </div>
+
+    <!-- EmulatorJS Configuration -->
+    <script>
+        // EmulatorJS Configuration
+        EJS_player = "#game";
+        EJS_core = "gba";
+        EJS_gameUrl = "roms/filtered.gba";
+        EJS_biosUrl = ""; // Optional - EmulatorJS can work without BIOS
+        EJS_pathtodata = "https://cdn.emulatorjs.org/stable/data/";
+        
+        // Optional settings
+        EJS_gameName = "Pokemon FireRed";
+        EJS_color = "#c62828"; // Pokemon Red theme color
+        EJS_startOnLoaded = true;
+        EJS_align = "center";
+        
+        // Keyboard controls (EmulatorJS default mappings)
+        // Arrow keys → D-Pad movement
+        // Z → A button
+        // X → B button
+        // Enter → Start
+        // Shift → Select
+        // A → L button
+        // S → R button
+        
+        // Error handling
+        window.addEventListener('error', function(e) {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const errorMessage = document.getElementById('error-message');
+            
+            loading.classList.add('hidden');
+            error.classList.remove('hidden');
+            
+            if (e.message && e.message.includes('404')) {
+                errorMessage.innerHTML = `
+                    <strong>Files Not Found</strong><br><br>
+                    Please ensure you have placed:<br>
+                    1. <code>firered.gba</code> in the <code>roms/</code> folder<br>
+                    2. <code>gba_bios.bin</code> in the <code>emulatorjs/bios/</code> folder<br><br>
+                    Refer to README.md for detailed instructions.
+                `;
+            } else {
+                errorMessage.textContent = 'An error occurred while loading the emulator. Check the console for details.';
+            }
+        });
+
+        // Success handler
+        window.EJS_ready = function() {
+            document.getElementById('loading').classList.add('hidden');
+            console.log('EmulatorJS loaded successfully!');
+        };
+
+        // Game start handler
+        window.EJS_onGameStart = function() {
+            console.log('Pokemon FireRed started!');
+        };
+    </script>
+
+    <!-- Load EmulatorJS from CDN -->
+    <script src="https://cdn.emulatorjs.org/stable/data/loader.js"></script>
+</body>
+</html>

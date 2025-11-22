@@ -1,0 +1,36 @@
+# ROM files (copyrighted content)
+*.gba
+*.gbc
+*.gb
+*.rom
+*.zip
+*.7z
+
+# BIOS files (copyrighted content)
+*.bin
+gba_bios.bin
+
+# Save states and saves
+*.state
+*.sav
+*.srm
+
+# System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor directories
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Node modules (if used)
+node_modules/
+
+# Build output
+dist/
+build/

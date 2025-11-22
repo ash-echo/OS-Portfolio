@@ -1,0 +1,49 @@
+====================================
+  POKÉMON FIRERED - QUICK START
+====================================
+
+🎮 SETUP IN 3 STEPS:
+
+1️⃣  PLACE YOUR FILES:
+   ✓ roms/firered.gba          (your Pokémon FireRed ROM)
+   ✓ emulatorjs/bios/gba_bios.bin  (GBA BIOS file)
+
+2️⃣  START A LOCAL SERVER:
+   
+   Using Node.js (recommended):
+   > cd pokemon-firered
+   > npx serve .
+   
+   Using Python:
+   > python -m http.server 8000
+
+3️⃣  OPEN IN BROWSER:
+   → http://localhost:3000  (if using serve)
+   → http://localhost:8000  (if using Python)
+
+====================================
+
+🎯 KEYBOARD CONTROLS:
+
+   Arrow Keys  = Move (D-Pad)
+   Z           = A Button
+   X           = B Button  
+   Enter       = Start
+   Shift       = Select
+   A           = L Button
+   S           = R Button
+
+====================================
+
+⚠️  IMPORTANT NOTES:
+
+• You MUST own legal copies of the ROM and BIOS
+• Cannot open index.html directly - must use a server
+• Files must be named EXACTLY as shown above
+• BIOS file should be 16 KB (16,384 bytes)
+
+====================================
+
+📖 For detailed instructions, see README.md
+
+🐛 Having issues? Check the Troubleshooting section in README.md

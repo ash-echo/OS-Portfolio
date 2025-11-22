@@ -1,0 +1,24 @@
+{
+  "name": "pokemon-firered-emulator",
+  "version": "1.0.0",
+  "description": "Pokémon FireRed EmulatorJS web player",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve .",
+    "serve": "npx serve .",
+    "dev": "npx serve . -l 3000"
+  },
+  "keywords": [
+    "pokemon",
+    "firered",
+    "emulator",
+    "gba",
+    "emulatorjs"
+  ],
+  "author": "",
+  "license": "GPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/EmulatorJS/EmulatorJS"
+  }
+}

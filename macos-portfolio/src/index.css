@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+body {
+  margin: 0;
+  overflow: hidden;
+  /* Prevent scrolling on desktop */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  cursor: none;
+}
+
+/* Hide default cursor */
+* {
+  cursor: none !important;
+}
+
+/* Custom cursor image */
+.custom-cursor-image {
+  position: fixed;
+  pointer-events: none;
+  z-index: 999999;
+  transition: transform 0.1s ease;
+}
+
+.custom-cursor-image img {
+  filter: brightness(2.5) saturate(1.2) hue-rotate(200deg) drop-shadow(0 0 1px rgba(0, 0, 0, 0.9)) drop-shadow(0 0 0.5px rgba(0, 0, 0, 1));
+  opacity: 0.95;
+}
+
+/* Windows‑style boot spinner */
+.boot-spinner {
+  width: 80px;
+  height: 80px;
+  border: 8px solid #fff;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Boot progress bar */
+.boot-progress {
+  width: 200px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.boot-bar {
+  height: 100%;
+  background: #fff;
+  width: 0%;
+}
+
+/* Gradient Animation */
+@keyframes gradient-x {
+
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: gradient-x 3s ease infinite;
+}
