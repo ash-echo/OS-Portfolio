@@ -1,19 +1,4 @@
-# ROM files (copyrighted content)
-*.gba
-*.gbc
-*.gb
-*.rom
-*.zip
-*.7z
 
-# BIOS files (copyrighted content)
-*.bin
-gba_bios.bin
-
-# Save states and saves
-*.state
-*.sav
-*.srm
 
 # System files
 .DS_Store

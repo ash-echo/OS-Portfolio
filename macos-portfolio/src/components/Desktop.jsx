@@ -15,6 +15,9 @@ import TrashApp from '../apps/TrashApp';
 import gsap from 'gsap';
 import PokemonApp from '../apps/PokemonApp';
 import Sonic2App from '../apps/Sonic2App';
+import FolderApp from '../apps/FolderApp';
+import TextEditorApp from '../apps/TextEditorApp';
+import DocumentViewerApp from '../apps/DocumentViewerApp';
 
 const Desktop = () => {
     const [windows, setWindows] = useState([]);
@@ -22,6 +25,31 @@ const Desktop = () => {
     const [bootSequence, setBootSequence] = useState(true);
     const [contextMenu, setContextMenu] = useState(null);
     const desktopRef = useRef(null);
+
+    // Dynamic desktop items (created by user)
+    const [desktopItems, setDesktopItems] = useState([]);
+
+    // Folder content (nested files and folders)
+    const [folderData, setFolderData] = useState({
+        'Nike Ecommerce\nWebsite Application': {
+            files: [
+                { id: 'nike-readme', name: 'README.md', content: 'Nike Ecommerce Website Application\n\nA full-stack e-commerce platform built with React and Node.js.\n\nFeatures:\n- Product catalog with filtering\n- Shopping cart functionality\n- Secure checkout process\n- User authentication\n- Order tracking\n\nTech Stack: React, Node.js, Express, MongoDB', type: 'file' }
+            ],
+            folders: []
+        },
+        'AI Resume Analyzer': {
+            files: [
+                { id: 'ai-readme', name: 'README.md', content: 'AI Resume Analyzer\n\nAn intelligent resume analysis tool powered by machine learning.\n\nFeatures:\n- Resume parsing and analysis\n- Skill matching\n- Job recommendation\n- ATS optimization\n- Score generation\n\nTech Stack: Python, TensorFlow, Flask, React', type: 'file' }
+            ],
+            folders: []
+        },
+        'Food Delivery App': {
+            files: [
+                { id: 'food-readme', name: 'README.md', content: 'Food Delivery App\n\nA comprehensive food delivery platform connecting restaurants and customers.\n\nFeatures:\n- Restaurant browsing\n- Real-time order tracking\n- Multiple payment options\n- Rating and reviews\n- Delivery scheduling\n\nTech Stack: React Native, Node.js, MongoDB, Socket.io', type: 'file' }
+            ],
+            folders: []
+        }
+    });
 
     const apps = [
         { id: 'finder', title: 'Finder', icon: '/1.png', color: 'bg-transparent', content: ProjectsApp },
@@ -58,10 +86,35 @@ const Desktop = () => {
         const app = apps.find((a) => a.id === appId);
         if (!app) return;
 
-        // Create unique window ID for folders
-        const windowId = folderName ? `${appId}-${folderName}` : appId;
-        const windowTitle = folderName || app.title;
+        // Folder windows
+        if (appId === 'finder' && folderName) {
+            const content = () => (
+                <FolderApp
+                    folderName={folderName}
+                    folderContent={folderData[folderName]}
+                    onCreateFile={handleCreateFile}
+                    onCreateFolder={handleCreateFolder}
+                    onOpenItem={handleOpenItem}
+                />
+            );
+            const windowId = `${appId}-${folderName}`;
+            const existingWindow = windows.find((w) => w.id === windowId);
+            if (existingWindow) {
+                if (existingWindow.minimized) {
+                    setWindows(windows.map((w) => (w.id === windowId ? { ...w, minimized: false } : w)));
+                }
+                setActiveWindowId(windowId);
+                focusWindow(windowId);
+                return;
+            }
+            const newWindow = { id: windowId, title: folderName, content, zIndex: windows.length + 1, minimized: false };
+            setWindows([...windows, newWindow]);
+            setActiveWindowId(windowId);
+            return;
+        }
 
+        // Normal app windows
+        const windowId = appId;
         const existingWindow = windows.find((w) => w.id === windowId);
         if (existingWindow) {
             if (existingWindow.minimized) {
@@ -73,14 +126,81 @@ const Desktop = () => {
         }
         const newWindow = {
             id: windowId,
-            title: windowTitle,
+            title: app.title,
             content: app.content,
             zIndex: windows.length + 1,
             minimized: false,
-            folderName: folderName,
         };
         setWindows([...windows, newWindow]);
         setActiveWindowId(windowId);
+    };
+
+    // Desktop context menu handlers
+    const createNewFolder = () => {
+        const name = prompt('Enter folder name:');
+        if (!name) return;
+        const newItem = { id: Date.now().toString(), name, icon: Folder, type: 'folder' };
+        setDesktopItems((prev) => [...prev, newItem]);
+        // Initialize empty folder in folderData
+        setFolderData((prev) => ({ ...prev, [name]: { files: [], folders: [] } }));
+    };
+
+    const createNewFile = () => {
+        const name = prompt('Enter file name:');
+        if (!name) return;
+        const id = Date.now().toString();
+        const newItem = { id, name, icon: FileText, type: 'file', content: '' };
+        setDesktopItems((prev) => [...prev, newItem]);
+    };
+
+    // Handlers for creating items inside folders
+    const handleCreateFile = (folderName, file) => {
+        setFolderData((prev) => {
+            const folder = prev[folderName] || { files: [], folders: [] };
+            return { ...prev, [folderName]: { ...folder, files: [...folder.files, file] } };
+        });
+    };
+
+    const handleCreateFolder = (folderName, newFolder) => {
+        setFolderData((prev) => {
+            const folder = prev[folderName] || { files: [], folders: [] };
+            return { ...prev, [folderName]: { ...folder, folders: [...folder.folders, newFolder] } };
+        });
+    };
+
+    // Handler for opening items from within folders
+    const handleOpenItem = (folderName, item) => {
+        if (item.type === 'folder') {
+            // Open nested folder
+            const nestedFolderName = `${folderName}/${item.name}`;
+            // Initialize nested folder data if it doesn't exist
+            if (!folderData[nestedFolderName]) {
+                setFolderData((prev) => ({ ...prev, [nestedFolderName]: { files: [], folders: [] } }));
+            }
+            openWindow('finder', nestedFolderName);
+        } else if (item.type === 'file') {
+            // Open file in viewer
+            const windowId = `file-${item.id}`;
+            const existingWindow = windows.find((w) => w.id === windowId);
+            if (existingWindow) {
+                if (existingWindow.minimized) {
+                    setWindows(windows.map((w) => (w.id === windowId ? { ...w, minimized: false } : w)));
+                }
+                setActiveWindowId(windowId);
+                focusWindow(windowId);
+                return;
+            }
+            const content = () => <DocumentViewerApp fileName={item.name} fileContent={item.content} />;
+            const newWindow = {
+                id: windowId,
+                title: item.name,
+                content,
+                zIndex: windows.length + 1,
+                minimized: false,
+            };
+            setWindows([...windows, newWindow]);
+            setActiveWindowId(windowId);
+        }
     };
 
     const closeWindow = (id) => {
@@ -149,7 +269,7 @@ const Desktop = () => {
                 <TopBar />
 
                 {/* Desktop Icons - Draggable */}
-                {desktopIcons.map((icon, index) => (
+                {[...desktopIcons, ...desktopItems].map((icon, index) => (
                     <Rnd
                         key={icon.id}
                         default={{
@@ -166,21 +286,39 @@ const Desktop = () => {
                             className="flex flex-col items-center gap-1 group cursor-move w-24"
                             onDoubleClick={() => {
                                 if (icon.type === 'folder') {
-                                    openWindow('finder', icon.title);
+                                    openWindow('finder', icon.name || icon.title);
                                 } else if (icon.type === 'app') {
                                     openWindow(icon.id);
+                                } else if (icon.type === 'file') {
+                                    // Open file in TextEditorApp for editing
+                                    const windowId = `file-${icon.id}`;
+                                    const existingWindow = windows.find((w) => w.id === windowId);
+                                    if (existingWindow) {
+                                        if (existingWindow.minimized) {
+                                            setWindows(windows.map((w) => (w.id === windowId ? { ...w, minimized: false } : w)));
+                                        }
+                                        setActiveWindowId(windowId);
+                                        focusWindow(windowId);
+                                        return;
+                                    }
+                                    const content = () => <TextEditorApp fileName={icon.name} initialContent={icon.content || ''} onSave={(content) => {
+                                        setDesktopItems(prev => prev.map(item => item.id === icon.id ? { ...item, content } : item));
+                                    }} />;
+                                    const newWindow = { id: windowId, title: icon.name, content, zIndex: windows.length + 1, minimized: false };
+                                    setWindows([...windows, newWindow]);
+                                    setActiveWindowId(windowId);
                                 }
                             }}
                         >
                             <div className="w-16 h-16 bg-blue-400/20 rounded-xl flex items-center justify-center backdrop-blur-sm border border-blue-300/30 shadow-lg transition-all group-hover:bg-blue-400/30 group-hover:border-blue-300/50">
                                 {typeof icon.icon === 'string' ? (
-                                    <img src={icon.icon} alt={icon.title} className="w-10 h-10 object-contain" />
+                                    <img src={icon.icon} alt={icon.title || icon.name} className="w-10 h-10 object-contain" />
                                 ) : (
                                     <icon.icon size={40} className="text-blue-200 fill-blue-400/30" strokeWidth={1.5} />
                                 )}
                             </div>
                             <span className="text-white text-xs font-medium text-center drop-shadow-md px-1 rounded bg-black/0 group-hover:bg-blue-600/80 transition-colors leading-tight whitespace-pre-line">
-                                {icon.title}
+                                {icon.title || icon.name}
                             </span>
                         </div>
                     </Rnd>
@@ -213,6 +351,8 @@ const Desktop = () => {
                         x={contextMenu.x}
                         y={contextMenu.y}
                         onClose={() => setContextMenu(null)}
+                        onNewFolder={createNewFolder}
+                        onNewFile={createNewFile}
                     />
                 )}
             </div>

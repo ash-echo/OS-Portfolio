@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { RefreshCw, FolderPlus, FileText, Image, SortAsc, Grid3x3, List } from 'lucide-react';
 
-const ContextMenu = ({ x, y, onClose }) => {
+const ContextMenu = ({ x, y, onClose, onNewFolder, onNewFile }) => {
     useEffect(() => {
         const handleClick = () => onClose();
         const handleScroll = () => onClose();
@@ -16,8 +16,8 @@ const ContextMenu = ({ x, y, onClose }) => {
     }, [onClose]);
 
     const menuItems = [
-        { icon: FolderPlus, label: 'New Folder', action: () => console.log('New Folder') },
-        { icon: FileText, label: 'New File', action: () => console.log('New File') },
+        { icon: FolderPlus, label: 'New Folder', action: onNewFolder },
+        { icon: FileText, label: 'New File', action: onNewFile },
         { divider: true },
         { icon: SortAsc, label: 'Sort By', submenu: true },
         { icon: Grid3x3, label: 'View', submenu: true },
