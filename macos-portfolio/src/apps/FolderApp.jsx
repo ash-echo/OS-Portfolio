@@ -6,7 +6,8 @@ const FolderApp = ({ folderName, folderContent = { files: [], folders: [] }, onC
 
     const handleContextMenu = (e) => {
         e.preventDefault();
-        setContextMenu({ x: e.clientX, y: e.clientY });
+        // Adjust for custom cursor offset (-3px, -3px)
+        setContextMenu({ x: e.clientX + 3, y: e.clientY + 3 });
     };
 
     const handleCreateNewFolder = () => {
@@ -33,26 +34,26 @@ const FolderApp = ({ folderName, folderContent = { files: [], folders: [] }, onC
 
     return (
         <div
-            className="w-full h-full bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6 overflow-auto"
+            className="h-full w-full bg-gray-50 p-6 overflow-auto relative"
             onContextMenu={handleContextMenu}
             onClick={() => setContextMenu(null)}
         >
             {/* Context Menu */}
             {contextMenu && (
                 <div
-                    className="fixed bg-gray-800 border border-gray-700 rounded-lg shadow-xl py-2 z-50"
+                    className="fixed bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-50"
                     style={{ left: contextMenu.x, top: contextMenu.y }}
                     onClick={(e) => e.stopPropagation()}
                 >
                     <button
                         onClick={handleCreateNewFolder}
-                        className="w-full px-4 py-2 text-left text-white hover:bg-gray-700 flex items-center gap-2"
+                        className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100 flex items-center gap-2"
                     >
                         <Folder size={16} /> New Folder
                     </button>
                     <button
                         onClick={handleCreateNewFile}
-                        className="w-full px-4 py-2 text-left text-white hover:bg-gray-700 flex items-center gap-2"
+                        className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100 flex items-center gap-2"
                     >
                         <FileText size={16} /> New File
                     </button>
@@ -68,13 +69,13 @@ const FolderApp = ({ folderName, folderContent = { files: [], folders: [] }, onC
                 {folderContent.folders?.map((folder) => (
                     <div
                         key={folder.id}
-                        className="flex flex-col items-center gap-2 p-4 rounded-lg hover:bg-gray-800/50 cursor-pointer transition-colors"
+                        className="flex flex-col items-center gap-2 p-4 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
                         onDoubleClick={() => handleItemDoubleClick(folder)}
                     >
                         <div className="w-16 h-16 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                            <Folder size={40} className="text-blue-400" />
+                            <Folder size={40} className="text-blue-500" />
                         </div>
-                        <span className="text-white text-sm text-center">{folder.name}</span>
+                        <span className="text-sm text-gray-700 text-center">{folder.name}</span>
                     </div>
                 ))}
 
@@ -82,13 +83,13 @@ const FolderApp = ({ folderName, folderContent = { files: [], folders: [] }, onC
                 {folderContent.files?.map((file) => (
                     <div
                         key={file.id}
-                        className="flex flex-col items-center gap-2 p-4 rounded-lg hover:bg-gray-800/50 cursor-pointer transition-colors"
+                        className="flex flex-col items-center gap-2 p-4 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
                         onDoubleClick={() => handleItemDoubleClick(file)}
                     >
                         <div className="w-16 h-16 bg-green-500/20 rounded-xl flex items-center justify-center">
-                            <FileText size={40} className="text-green-400" />
+                            <FileText size={40} className="text-green-500" />
                         </div>
-                        <span className="text-white text-sm text-center">{file.name}</span>
+                        <span className="text-sm text-gray-700 text-center">{file.name}</span>
                     </div>
                 ))}
             </div>

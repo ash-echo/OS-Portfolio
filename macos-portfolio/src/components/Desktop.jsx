@@ -82,24 +82,132 @@ const Desktop = () => {
             .fromTo('.desktop-content', { opacity: 0 }, { opacity: 1, duration: 0.6, ease: 'power2.out' });
     }, []);
 
+    // Update all finder windows when folderData changes
+    useEffect(() => {
+        // Find all finder windows and update their content
+        setWindows(prevWindows => prevWindows.map(window => {
+            // Check if this is a finder window (id starts with 'finder-')
+            if (window.id.startsWith('finder-')) {
+                const folderName = window.id.replace('finder-', '');
+                const allFolders = [...desktopIcons.filter(i => i.type === 'folder'), ...desktopItems.filter(i => i.type === 'folder')];
+
+                // Recreate the content with updated folderData
+                const content = () => (
+                    <ProjectsApp
+                        allFolders={allFolders}
+                        folderData={folderData}
+                        initialPath={folderName === 'finder' ? null : folderName}
+                        onCreateFolder={(path) => {
+                            const name = prompt('Enter folder name:');
+                            if (!name) return;
+                            const targetPath = path || folderName;
+                            if (folderName === 'finder') {
+                                createNewFolder();
+                            } else {
+                                handleCreateFolder(targetPath, { id: Date.now().toString(), name, type: 'folder' });
+                            }
+                        }}
+                        onCreateFile={(path) => {
+                            const name = prompt('Enter file name:');
+                            if (!name) return;
+                            const targetPath = path || folderName;
+                            if (folderName === 'finder') {
+                                createNewFile();
+                            } else {
+                                handleCreateFile(targetPath, { id: Date.now().toString(), name, content: '', type: 'file' });
+                            }
+                        }}
+                        onOpenFolder={() => { }}
+                        onOpenFile={(file) => {
+                            const windowId = `file-${file.id}`;
+                            const existingFileWindow = windows.find((w) => w.id === windowId);
+                            if (existingFileWindow) {
+                                if (existingFileWindow.minimized) {
+                                    setWindows(windows.map((w) => (w.id === windowId ? { ...w, minimized: false } : w)));
+                                }
+                                setActiveWindowId(windowId);
+                                focusWindow(windowId);
+                                return;
+                            }
+                            const fileContent = () => <DocumentViewerApp fileName={file.name} fileContent={file.content} />;
+                            const newFileWindow = {
+                                id: windowId,
+                                title: file.name,
+                                content: fileContent,
+                                zIndex: windows.length + 1,
+                                minimized: false,
+                            };
+                            setWindows([...windows, newFileWindow]);
+                            setActiveWindowId(windowId);
+                        }}
+                    />
+                );
+
+                return { ...window, content };
+            }
+            return window;
+        }));
+    }, [folderData, desktopIcons, desktopItems]);
+
     const openWindow = (appId, folderName = null) => {
         const app = apps.find((a) => a.id === appId);
         if (!app) return;
 
-        // Folder windows
+        // Folder windows - use ProjectsApp with sidebar
         if (appId === 'finder' && folderName) {
-            const content = () => (
-                <FolderApp
-                    folderName={folderName}
-                    folderContent={folderData[folderName]}
-                    onCreateFile={handleCreateFile}
-                    onCreateFolder={handleCreateFolder}
-                    onOpenItem={handleOpenItem}
+            const windowId = `${appId}-${folderName}`;
+            const allFolders = [...desktopIcons.filter(i => i.type === 'folder'), ...desktopItems.filter(i => i.type === 'folder')];
+
+            // Create content function that will be called on each render
+            const createContent = () => () => (
+                <ProjectsApp
+                    allFolders={allFolders}
+                    folderData={folderData}
+                    initialPath={folderName}
+                    onCreateFolder={(path) => {
+                        const name = prompt('Enter folder name:');
+                        if (!name) return;
+                        handleCreateFolder(path || folderName, { id: Date.now().toString(), name, type: 'folder' });
+                    }}
+                    onCreateFile={(path) => {
+                        const name = prompt('Enter file name:');
+                        if (!name) return;
+                        handleCreateFile(path || folderName, { id: Date.now().toString(), name, content: '', type: 'file' });
+                    }}
+                    onOpenFolder={(folderPath) => {
+                        // Navigate handled internally by ProjectsApp
+                    }}
+                    onOpenFile={(file) => {
+                        const windowId = `file-${file.id}`;
+                        const existingFileWindow = windows.find((w) => w.id === windowId);
+                        if (existingFileWindow) {
+                            if (existingFileWindow.minimized) {
+                                setWindows(windows.map((w) => (w.id === windowId ? { ...w, minimized: false } : w)));
+                            }
+                            setActiveWindowId(windowId);
+                            focusWindow(windowId);
+                            return;
+                        }
+                        const fileContent = () => <DocumentViewerApp fileName={file.name} fileContent={file.content} />;
+                        const newFileWindow = {
+                            id: windowId,
+                            title: file.name,
+                            content: fileContent,
+                            zIndex: windows.length + 1,
+                            minimized: false,
+                        };
+                        setWindows([...windows, newFileWindow]);
+                        setActiveWindowId(windowId);
+                    }}
                 />
             );
-            const windowId = `${appId}-${folderName}`;
+
             const existingWindow = windows.find((w) => w.id === windowId);
             if (existingWindow) {
+                // Update existing window content with new folderData
+                setWindows(windows.map((w) =>
+                    w.id === windowId ? { ...w, content: createContent() } : w
+                ));
                 if (existingWindow.minimized) {
                     setWindows(windows.map((w) => (w.id === windowId ? { ...w, minimized: false } : w)));
                 }
@@ -107,11 +215,13 @@ const Desktop = () => {
                 focusWindow(windowId);
                 return;
             }
-            const newWindow = { id: windowId, title: folderName, content, zIndex: windows.length + 1, minimized: false };
+            const newWindow = { id: windowId, title: folderName, content: createContent(), zIndex: windows.length + 1, minimized: false };
             setWindows([...windows, newWindow]);
             setActiveWindowId(windowId);
             return;
         }
+
+        // Normal app windows
 
         // Normal app windows
         const windowId = appId;
@@ -124,10 +234,73 @@ const Desktop = () => {
             focusWindow(windowId);
             return;
         }
+
+        // For Finder, wrap with props
+        let content = app.content;
+        if (appId === 'finder') {
+            const allFolders = [...desktopIcons.filter(i => i.type === 'folder'), ...desktopItems.filter(i => i.type === 'folder')];
+            content = () => (
+                <ProjectsApp
+                    allFolders={allFolders}
+                    folderData={folderData}
+                    onCreateFolder={(path) => {
+                        const name = prompt('Enter folder name:');
+                        if (!name) return;
+                        const targetFolder = path || 'desktop';
+                        if (targetFolder === 'desktop') {
+                            // Create on desktop
+                            createNewFolder();
+                        } else {
+                            // Create in specific folder
+                            handleCreateFolder(path, { id: Date.now().toString(), name, type: 'folder' });
+                        }
+                    }}
+                    onCreateFile={(path) => {
+                        const name = prompt('Enter file name:');
+                        if (!name) return;
+                        const targetFolder = path || 'desktop';
+                        if (targetFolder === 'desktop') {
+                            // Create on desktop
+                            createNewFile();
+                        } else {
+                            // Create in specific folder
+                            handleCreateFile(path, { id: Date.now().toString(), name, content: '', type: 'file' });
+                        }
+                    }}
+                    onOpenFolder={(folderName) => {
+                        // Just update the path within Finder, handled internally
+                    }}
+                    onOpenFile={(file) => {
+                        // Open file in viewer
+                        const windowId = `file-${file.id}`;
+                        const existingFileWindow = windows.find((w) => w.id === windowId);
+                        if (existingFileWindow) {
+                            if (existingFileWindow.minimized) {
+                                setWindows(windows.map((w) => (w.id === windowId ? { ...w, minimized: false } : w)));
+                            }
+                            setActiveWindowId(windowId);
+                            focusWindow(windowId);
+                            return;
+                        }
+                        const fileContent = () => <DocumentViewerApp fileName={file.name} fileContent={file.content} />;
+                        const newFileWindow = {
+                            id: windowId,
+                            title: file.name,
+                            content: fileContent,
+                            zIndex: windows.length + 1,
+                            minimized: false,
+                        };
+                        setWindows([...windows, newFileWindow]);
+                        setActiveWindowId(windowId);
+                    }}
+                />
+            );
+        }
+
         const newWindow = {
             id: windowId,
             title: app.title,
-            content: app.content,
+            content,
             zIndex: windows.length + 1,
             minimized: false,
         };
