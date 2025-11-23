@@ -1,20 +1,32 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { RefreshCw, FolderPlus, FileText, Image, SortAsc, Grid3x3, List, Trash2 } from 'lucide-react';
 
-const ContextMenu = ({ x, y, onClose, onNewFolder, onNewFile, onDelete }) => {
+const ContextMenu = ({ x, y, onClose, onNewFolder, onNewFile, onDelete, onRefresh }) => {
     const menuRef = useRef(null);
     const [position, setPosition] = useState({ x, y });
 
     useEffect(() => {
-        const handleClick = () => onClose();
-        const handleScroll = () => onClose();
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                onClose();
+            }
+        };
 
-        document.addEventListener('click', handleClick);
-        document.addEventListener('scroll', handleScroll);
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        // Add slight delay to prevent immediate close from the opening click
+        setTimeout(() => {
+            document.addEventListener('mousedown', handleClickOutside);
+            document.addEventListener('keydown', handleEscape);
+        }, 100);
 
         return () => {
-            document.removeEventListener('click', handleClick);
-            document.removeEventListener('scroll', handleScroll);
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('keydown', handleEscape);
         };
     }, [onClose]);
 
@@ -55,7 +67,7 @@ const ContextMenu = ({ x, y, onClose, onNewFolder, onNewFile, onDelete }) => {
         { icon: FolderPlus, label: 'New Folder', action: onNewFolder },
         { icon: FileText, label: 'New File', action: onNewFile },
         { divider: true },
-        { icon: RefreshCw, label: 'Refresh', action: () => window.location.reload() },
+        { icon: RefreshCw, label: 'Refresh', action: onRefresh || (() => window.location.reload()) },
         ...(onDelete ? [
             { divider: true },
             { icon: Trash2, label: 'Delete', action: onDelete, danger: true }

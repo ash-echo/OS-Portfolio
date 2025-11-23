@@ -29,6 +29,9 @@ const Desktop = () => {
     // Dynamic desktop items (created by user)
     const [desktopItems, setDesktopItems] = useState([]);
 
+    // Refresh animation state
+    const [isRefreshing, setIsRefreshing] = useState(false);
+
     // Folder content (nested files and folders)
     const [folderData, setFolderData] = useState({
         'Nike Ecommerce\nWebsite Application': {
@@ -83,95 +86,140 @@ const Desktop = () => {
             .fromTo('.desktop-content', { opacity: 0 }, { opacity: 1, duration: 0.6, ease: 'power2.out' });
     }, []);
 
-    // Update all finder windows when folderData changes
+    // Memoize the ProjectsApp content to avoid recreating it on every render
+    const createFinderContent = (folderName) => {
+        const allFolders = [...desktopIcons.filter(i => i.type === 'folder'), ...desktopItems.filter(i => i.type === 'folder')];
+
+        return (
+            <ProjectsApp
+                key={folderName || 'finder'}
+                allFolders={allFolders}
+                folderData={folderData}
+                initialPath={folderName}
+                onCreateFolder={(path) => {
+                    const name = prompt('Enter folder name:');
+                    if (!name) return;
+                    if (!folderName && !path) {
+                        const newItem = { id: Date.now().toString(), name, icon: Folder, type: 'folder' };
+                        setDesktopItems((prev) => [...prev, newItem]);
+                        setFolderData((prev) => ({ ...prev, [name]: { files: [], folders: [] } }));
+                    } else {
+                        const targetPath = path || folderName;
+                        setFolderData((prev) => {
+                            const folder = prev[targetPath] || { files: [], folders: [] };
+                            return { ...prev, [targetPath]: { ...folder, folders: [...folder.folders, { id: Date.now().toString(), name, type: 'folder' }] } };
+                        });
+                    }
+                }}
+                onCreateFile={(path) => {
+                    const name = prompt('Enter file name:');
+                    if (!name) return;
+                    if (!folderName && !path) {
+                        const id = Date.now().toString();
+                        const newItem = { id, name, icon: FileText, type: 'file', content: '' };
+                        setDesktopItems((prev) => [...prev, newItem]);
+                    } else {
+                        const targetPath = path || folderName;
+                        setFolderData((prev) => {
+                            const folder = prev[targetPath] || { files: [], folders: [] };
+                            return { ...prev, [targetPath]: { ...folder, files: [...folder.files, { id: Date.now().toString(), name, content: '', type: 'file' }] } };
+                        });
+                    }
+                }}
+                onOpenFolder={() => { }}
+                onOpenFile={(file) => {
+                    const windowId = `file-${file.id}`;
+                    setWindows((prevWin) => {
+                        const existingFileWindow = prevWin.find((w) => w.id === windowId);
+                        if (existingFileWindow) {
+                            if (existingFileWindow.minimized) {
+                                setActiveWindowId(windowId);
+                                return prevWin.map((w) => (w.id === windowId ? { ...w, minimized: false } : w));
+                            }
+                            setActiveWindowId(windowId);
+                            return prevWin;
+                        }
+                        const fileContent = () => <TextEditorApp
+                            fileName={file.name}
+                            initialContent={file.content || ''}
+                            onSave={(newContent) => {
+                                // Update the file content in folderData
+                                setFolderData((prev) => {
+                                    const targetPath = folderName;
+                                    const folder = prev[targetPath];
+                                    if (!folder) return prev;
+
+                                    return {
+                                        ...prev,
+                                        [targetPath]: {
+                                            ...folder,
+                                            files: folder.files.map(f =>
+                                                f.id === file.id ? { ...f, content: newContent } : f
+                                            )
+                                        }
+                                    };
+                                });
+                            }}
+                        />;
+                        const newFileWindow = {
+                            id: windowId,
+                            title: file.name,
+                            content: fileContent,
+                            zIndex: prevWin.length + 1,
+                            minimized: false,
+                        };
+                        setActiveWindowId(windowId);
+                        return [...prevWin, newFileWindow];
+                    });
+                }}
+                onDeleteItem={(path, item, itemType) => {
+                    setFolderData((prev) => {
+                        const targetPath = path || folderName;
+                        const folder = prev[targetPath];
+                        if (!folder) return prev;
+
+                        if (itemType === 'folder') {
+                            return {
+                                ...prev,
+                                [targetPath]: {
+                                    ...folder,
+                                    folders: folder.folders.filter(f => f.id !== item.id)
+                                }
+                            };
+                        } else {
+                            return {
+                                ...prev,
+                                [targetPath]: {
+                                    ...folder,
+                                    files: folder.files.filter(f => f.id !== item.id)
+                                }
+                            };
+                        }
+                    });
+                }}
+            />
+        );
+    };
+
+    // Update finder windows only when folderData actually changes
     useEffect(() => {
-        setWindows(prevWindows => prevWindows.map(window => {
+        let hasChanges = false;
+        const updatedWindows = windows.map(window => {
             const isFinder = window.id === 'finder' || window.id.startsWith('finder-');
             if (isFinder) {
                 const folderName = window.id === 'finder' ? null : window.id.replace('finder-', '');
-                const allFolders = [...desktopIcons.filter(i => i.type === 'folder'), ...desktopItems.filter(i => i.type === 'folder')];
-
-                const content = (
-                    <ProjectsApp
-                        key={folderName || 'finder'}
-                        allFolders={allFolders}
-                        folderData={folderData}
-                        initialPath={folderName}
-                        onCreateFolder={(path) => {
-                            const name = prompt('Enter folder name:');
-                            if (!name) return;
-                            if (!folderName && !path) {
-                                createNewFolder();
-                            } else {
-                                const targetPath = path || folderName;
-                                handleCreateFolder(targetPath, { id: Date.now().toString(), name, type: 'folder' });
-                            }
-                        }}
-                        onCreateFile={(path) => {
-                            const name = prompt('Enter file name:');
-                            if (!name) return;
-                            if (!folderName && !path) {
-                                createNewFile();
-                            } else {
-                                const targetPath = path || folderName;
-                                handleCreateFile(targetPath, { id: Date.now().toString(), name, content: '', type: 'file' });
-                            }
-                        }}
-                        onOpenFolder={() => { }}
-                        onOpenFile={(file) => {
-                            const windowId = `file-${file.id}`;
-                            const existingFileWindow = windows.find((w) => w.id === windowId);
-                            if (existingFileWindow) {
-                                if (existingFileWindow.minimized) {
-                                    setWindows(windows.map((w) => (w.id === windowId ? { ...w, minimized: false } : w)));
-                                }
-                                setActiveWindowId(windowId);
-                                focusWindow(windowId);
-                                return;
-                            }
-                            const fileContent = () => <DocumentViewerApp fileName={file.name} fileContent={file.content} />;
-                            const newFileWindow = {
-                                id: windowId,
-                                title: file.name,
-                                content: fileContent,
-                                zIndex: windows.length + 1,
-                                minimized: false,
-                            };
-                            setWindows([...windows, newFileWindow]);
-                            setActiveWindowId(windowId);
-                        }}
-                        onDeleteItem={(path, item, itemType) => {
-                            setFolderData((prev) => {
-                                const targetPath = path || folderName;
-                                const folder = prev[targetPath];
-                                if (!folder) return prev;
-
-                                if (itemType === 'folder') {
-                                    return {
-                                        ...prev,
-                                        [targetPath]: {
-                                            ...folder,
-                                            folders: folder.folders.filter(f => f.id !== item.id)
-                                        }
-                                    };
-                                } else {
-                                    return {
-                                        ...prev,
-                                        [targetPath]: {
-                                            ...folder,
-                                            files: folder.files.filter(f => f.id !== item.id)
-                                        }
-                                    };
-                                }
-                            });
-                        }}
-                    />
-                );
-                return { ...window, content };
+                const newContent = createFinderContent(folderName);
+                hasChanges = true;
+                return { ...window, content: newContent };
             }
             return window;
-        }));
-    }, [folderData, desktopIcons, desktopItems]);
+        });
+
+        if (hasChanges) {
+            setWindows(updatedWindows);
+        }
+    }, [folderData]);
+
 
     const openWindow = (appId, folderName = null) => {
         const app = apps.find((a) => a.id === appId);
@@ -486,6 +534,17 @@ const Desktop = () => {
         });
     };
 
+    // Handle refresh with icon blink animation
+    const handleRefresh = () => {
+        setIsRefreshing(true);
+        setContextMenu(null);
+
+        // Reset after animation completes
+        setTimeout(() => {
+            setIsRefreshing(false);
+        }, 300);
+    };
+
 
     return (
         <div className="w-full h-screen overflow-hidden relative select-none font-sans bg-black">
@@ -580,7 +639,7 @@ const Desktop = () => {
                                 className="z-0"
                             >
                                 <div
-                                    className="flex flex-col items-center gap-1 group cursor-move w-24"
+                                    className={`flex flex-col items-center gap-1 group cursor-move w-24 transition-opacity duration-150 ${isRefreshing ? 'opacity-0' : 'opacity-100'}`}
                                     onContextMenu={(e) => handleContextMenu(e, icon)}
                                     onDoubleClick={() => {
                                         if (icon.type === 'folder') {
@@ -661,6 +720,7 @@ const Desktop = () => {
                             onNewFolder={createNewFolder}
                             onNewFile={createNewFile}
                             onDelete={contextMenu.onDelete}
+                            onRefresh={handleRefresh}
                         />
                     )
                 }
