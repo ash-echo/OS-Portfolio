@@ -82,20 +82,31 @@ const TopBar = ({ onOpenWindow, desktopItems, windows, apps }) => {
                     >
                         <Power size={24} className="h-6 w-6 hover:bg-white/20 rounded transition-colors" />
                     </div>
-                    <div className="font-bold hidden sm:block cursor-pointer hover:bg-white/20 px-2 rounded transition-colors">
-                        Ashwath's Portfolio
-                    </div>
+                    <a 
+                        href="https://github.com/ash-echo"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-bold hidden sm:block cursor-pointer hover:bg-white/20 px-2 rounded transition-colors"
+                    >
+                        Ashwath's Github
+                    </a>
                     <div className="hidden sm:flex gap-4 text-white/90">
                         <span
-                            onClick={() => onOpenWindow && onOpenWindow('finder')}
+                            onClick={() => onOpenWindow && onOpenWindow('work')}
                             className="hover:bg-white/20 px-2 rounded cursor-pointer transition-colors"
                         >
                             Projects
                         </span>
-                        <span className="hover:bg-white/20 px-2 rounded cursor-pointer transition-colors">
+                        <span 
+                            onClick={() => onOpenWindow && onOpenWindow('contacts')}
+                            className="hover:bg-white/20 px-2 rounded cursor-pointer transition-colors"
+                        >
                             Contact
                         </span>
-                        <span className="hover:bg-white/20 px-2 rounded cursor-pointer transition-colors">
+                        <span 
+                            onClick={() => onOpenWindow && onOpenWindow('resume')}
+                            className="hover:bg-white/20 px-2 rounded cursor-pointer transition-colors"
+                        >
                             Resume
                         </span>
                     </div>

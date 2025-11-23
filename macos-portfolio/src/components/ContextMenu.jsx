@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { RefreshCw, FolderPlus, FileText, Image, SortAsc, Grid3x3, List, Trash2 } from 'lucide-react';
+import { RefreshCw, FolderPlus, FileText, Image, SortAsc, Grid3x3, List, Trash2, Download } from 'lucide-react';
 
-const ContextMenu = ({ x, y, onClose, onNewFolder, onNewFile, onDelete, onRefresh }) => {
+const ContextMenu = ({ x, y, onClose, onNewFolder, onNewFile, onDelete, onRefresh, onDownload }) => {
     const menuRef = useRef(null);
     const [position, setPosition] = useState({ x, y });
 
@@ -64,10 +64,14 @@ const ContextMenu = ({ x, y, onClose, onNewFolder, onNewFile, onDelete, onRefres
     }, [x, y]);
 
     const menuItems = [
-        { icon: FolderPlus, label: 'New Folder', action: onNewFolder },
-        { icon: FileText, label: 'New File', action: onNewFile },
-        { divider: true },
-        { icon: RefreshCw, label: 'Refresh', action: onRefresh || (() => window.location.reload()) },
+        ...(onDownload ? [
+            { icon: Download, label: 'Download Resume', action: onDownload }
+        ] : [
+            { icon: FolderPlus, label: 'New Folder', action: onNewFolder },
+            { icon: FileText, label: 'New File', action: onNewFile },
+            { divider: true },
+            { icon: RefreshCw, label: 'Refresh', action: onRefresh || (() => window.location.reload()) }
+        ]),
         ...(onDelete ? [
             { divider: true },
             { icon: Trash2, label: 'Delete', action: onDelete, danger: true }

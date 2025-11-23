@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { Folder, FileText, Clock, Briefcase, User, Trash2, Home, ChevronRight, Plus } from 'lucide-react';
 import ReactDOM from 'react-dom';
+import ResumeApp from './ResumeApp';
+import WorkApp from './WorkApp';
+import AboutMeApp from './AboutMeApp';
 
 const ProjectsApp = ({
     allFolders = [],
@@ -216,107 +219,9 @@ const ProjectsApp = ({
 
     const content = {
         'folder-view': renderFolderView(),
-        resume: (
-            <div className="h-full w-full bg-white p-8 overflow-auto">
-                <div className="max-w-3xl mx-auto shadow-lg border border-gray-200 p-10 bg-white min-h-[1000px]">
-                    <div className="flex justify-between items-start mb-8">
-                        <div>
-                            <h1 className="text-4xl font-bold text-gray-900 mb-1">Full Name</h1>
-                            <p className="text-gray-500">front-end developer</p>
-                        </div>
-                        <div className="text-right text-sm text-blue-600">
-                            <p>linkedin.com/in/fullname</p>
-                            <p>github.com/fullname</p>
-                        </div>
-                    </div>
-
-                    <div className="mb-8">
-                        <h2 className="text-lg font-bold text-blue-600 border-b border-gray-200 pb-1 mb-4 uppercase tracking-wider">
-                            Work Experience
-                        </h2>
-                        <div className="mb-6">
-                            <div className="flex justify-between mb-1">
-                                <h3 className="font-bold text-gray-800">Front-end Developer</h3>
-                                <span className="text-gray-600 font-medium">New York, USA</span>
-                            </div>
-                            <div className="flex justify-between mb-2">
-                                <p className="text-gray-500 italic">Company Inc.</p>
-                                <p className="text-gray-500">02/2022 – Current</p>
-                            </div>
-                            <ul className="list-disc list-inside text-gray-700 space-y-1 ml-4">
-                                <li>Built responsive React applications</li>
-                                <li>Implemented complex UI components with Tailwind CSS</li>
-                                <li>Collaborated with backend team for API integration</li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div className="mb-8">
-                        <h2 className="text-lg font-bold text-blue-600 border-b border-gray-200 pb-1 mb-4 uppercase tracking-wider">
-                            Education
-                        </h2>
-                        <div>
-                            <div className="flex justify-between mb-1">
-                                <h3 className="font-bold text-gray-800">Bachelor of Computer Science</h3>
-                                <span className="text-gray-600 font-medium">New York, USA</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <p className="text-gray-500 italic">University Name</p>
-                                <p className="text-gray-500">09/2018 – 06/2022</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="mb-8">
-                        <h2 className="text-lg font-bold text-blue-600 border-b border-gray-200 pb-1 mb-4 uppercase tracking-wider">
-                            Skills
-                        </h2>
-                        <div className="space-y-2">
-                            <div>
-                                <p className="font-medium text-gray-800">Languages:</p>
-                                <p className="text-gray-700">JavaScript, TypeScript, Python, HTML, CSS</p>
-                            </div>
-                            <div>
-                                <p className="font-medium text-gray-800">Frameworks:</p>
-                                <p className="text-gray-700">React, Next.js, Node.js, Express</p>
-                            </div>
-                            <div>
-                                <p className="font-medium text-gray-800">Tools:</p>
-                                <p className="text-gray-700">Git, Docker, VS Code, Figma</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        ),
-        work: (
-            <div className="h-full w-full bg-gradient-to-br from-gray-50 to-gray-100 p-8 overflow-auto">
-                <h1 className="text-3xl font-bold text-gray-800 mb-6">Work Projects</h1>
-                <div className="grid grid-cols-2 gap-6">
-                    {[
-                        { name: 'Nike Ecommerce', desc: 'Full-stack e-commerce platform' },
-                        { name: 'AI Resume Analyzer', desc: 'ML-powered resume analysis' },
-                        { name: 'Food Delivery App', desc: 'Real-time food delivery platform' },
-                    ].map((project) => (
-                        <div key={project.name} className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-                            <h3 className="text-xl font-bold text-gray-800 mb-2">{project.name}</h3>
-                            <p className="text-gray-600">{project.desc}</p>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        ),
-        about: (
-            <div className="h-full w-full bg-gradient-to-br from-purple-50 to-blue-50 p-8 overflow-auto">
-                <div className="max-w-2xl mx-auto">
-                    <h1 className="text-4xl font-bold text-gray-800 mb-6">About Me</h1>
-                    <p className="text-lg text-gray-700 leading-relaxed">
-                        I'm a passionate full-stack developer with expertise in building modern web applications.
-                        I love creating intuitive user interfaces and solving complex problems.
-                    </p>
-                </div>
-            </div>
-        ),
+        resume: <ResumeApp />,
+        work: <WorkApp />,
+        about: <AboutMeApp />,
         trash: (
             <div className="h-full w-full bg-gray-100 p-8 overflow-auto flex items-center justify-center">
                 <div className="text-center text-gray-400">

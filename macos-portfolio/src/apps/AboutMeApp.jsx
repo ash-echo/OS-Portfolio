@@ -2,7 +2,8 @@ import React from 'react';
 
 const AboutMeApp = () => {
     return (
-        <div className="p-8 max-w-3xl mx-auto font-sans text-gray-800 leading-relaxed bg-white min-h-full">
+        <div className="h-full overflow-auto">
+            <div className="p-8 max-w-3xl mx-auto font-sans text-gray-800 leading-relaxed bg-white min-h-full">
             <h1 className="text-4xl font-bold mb-6 text-gray-900">About Me</h1>
             <div className="flex gap-6 mb-8">
                 <div className="w-32 h-32 bg-gray-200 rounded-full flex-shrink-0"></div>
@@ -36,6 +37,7 @@ const AboutMeApp = () => {
                         <li>AWS</li>
                     </ul>
                 </div>
+            </div>
             </div>
         </div>
     );
