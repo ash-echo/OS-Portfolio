@@ -1,9 +1,19 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import Icon from './Icon';
 import gsap from 'gsap';
 
 const Dock = ({ apps, openApps, onOpenApp }) => {
     const dockRef = useRef(null);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const handleMouseMove = (e) => {
         const dock = dockRef.current;
@@ -39,15 +49,15 @@ const Dock = ({ apps, openApps, onOpenApp }) => {
     };
 
     return (
-        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-[100] mb-2">
+        <div className={`${isMobile ? 'fixed bottom-1 left-1/2 transform -translate-x-1/2 z-[100] w-full max-w-[90vw]' : 'fixed bottom-6 left-1/2 transform -translate-x-1/2 z-[100] mb-2'}`}>
             <div
                 ref={dockRef}
-                onMouseMove={handleMouseMove}
-                onMouseLeave={handleMouseLeave}
-                className="flex items-end gap-4 px-6 py-4 bg-white/10 backdrop-blur-3xl border border-white/20 rounded-[2rem] shadow-2xl"
+                onMouseMove={!isMobile ? handleMouseMove : undefined}
+                onMouseLeave={!isMobile ? handleMouseLeave : undefined}
+                className={`${isMobile ? 'flex items-end justify-center gap-0 px-0.5 py-0.5 mx-auto max-w-full' : 'flex items-end gap-4 px-6 py-4'} bg-white/10 backdrop-blur-3xl border border-white/20 rounded-[2rem] shadow-2xl`}
             >
                 {apps.map((app) => (
-                    <div key={app.id} className="dock-icon origin-bottom transition-all will-change-transform">
+                    <div key={app.id} className={`${isMobile ? 'dock-icon origin-bottom transition-all will-change-transform flex-shrink-0' : 'dock-icon origin-bottom transition-all will-change-transform'}`}>
                         <Icon
                             title={app.title}
                             icon={app.icon}
@@ -55,7 +65,8 @@ const Dock = ({ apps, openApps, onOpenApp }) => {
                             isOpen={openApps.includes(app.id)}
                             onClick={() => onOpenApp(app.id)}
                             // Disable internal hover effects of Icon since Dock handles it
-                            disableHover={true}
+                            disableHover={!isMobile}
+                            isMobile={isMobile}
                         />
                     </div>
                 ))}

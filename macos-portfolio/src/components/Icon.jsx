@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import gsap from 'gsap';
 
-const Icon = ({ title, icon: IconComponent, onClick, isOpen, color, disableHover }) => {
+const Icon = ({ title, icon: IconComponent, onClick, isOpen, color, disableHover, isMobile }) => {
     const iconRef = useRef(null);
 
     useEffect(() => {
@@ -34,7 +34,7 @@ const Icon = ({ title, icon: IconComponent, onClick, isOpen, color, disableHover
             <div
                 ref={iconRef}
                 onClick={onClick}
-                className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg cursor-pointer relative overflow-hidden border border-white/10 ${typeof IconComponent === 'string' ? 'bg-transparent' : (color || 'bg-gray-800')}`}
+                className={`${isMobile ? 'w-10 h-10' : 'w-16 h-16'} rounded-2xl flex items-center justify-center shadow-lg cursor-pointer relative overflow-hidden border border-white/10 ${typeof IconComponent === 'string' ? 'bg-transparent' : (color || 'bg-gray-800')}`}
             >
                 {/* Gloss Effect - only for non-image icons */}
                 {typeof IconComponent !== 'string' && (
@@ -44,7 +44,7 @@ const Icon = ({ title, icon: IconComponent, onClick, isOpen, color, disableHover
                 {typeof IconComponent === 'string' ? (
                     <img src={IconComponent} alt={title} className="w-full h-full object-cover" />
                 ) : (
-                    <IconComponent size={32} className="text-white relative z-10 drop-shadow-md" />
+                    <IconComponent size={isMobile ? 20 : 32} className="text-white relative z-10 drop-shadow-md" />
                 )}
             </div>
 

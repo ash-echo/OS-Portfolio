@@ -35,6 +35,7 @@ const Desktop = () => {
         width: window.innerWidth,
         height: window.innerHeight
     });
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
     // Dynamic desktop items (created by user)
     const [desktopItems, setDesktopItems] = useState([]);
@@ -42,7 +43,9 @@ const Desktop = () => {
     // Store custom icon positions
     const [iconPositions, setIconPositions] = useState({});
 
-    // Refresh animation state
+    // Long press state for mobile
+    const [longPressTimer, setLongPressTimer] = useState(null);
+    const [longPressTarget, setLongPressTarget] = useState(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
     // Folder content (nested files and folders)
@@ -110,10 +113,13 @@ const Desktop = () => {
 
     useEffect(() => {
         const handleResize = () => {
+            const newWidth = window.innerWidth;
+            const newHeight = window.innerHeight;
             setWindowSize({
-                width: window.innerWidth,
-                height: window.innerHeight
+                width: newWidth,
+                height: newHeight
             });
+            setIsMobile(newWidth < 768);
         };
 
         window.addEventListener('resize', handleResize);
@@ -969,21 +975,63 @@ const Desktop = () => {
         setContextMenu(null);
     };
 
-    const handleContextMenu = (e, item = null) => {
-        e.preventDefault();
-        e.stopPropagation();
+    const handleTouchStart = (e, item = null) => {
+        if (!isMobile) return;
 
-        // Only allow deletion for user-created items (in desktopItems), not pre-existing icons (in desktopIcons)
-        const isUserCreated = item && desktopItems.some(i => i.id === item.id);
-        const isResumeFile = item && item.type === 'resume-file';
+        setLongPressTarget(item);
+        const timer = setTimeout(() => {
+            handleContextMenu(e, item);
+            setLongPressTimer(null);
+        }, 500); // 500ms long press
 
-        setContextMenu({
-            x: e.clientX,
-            y: e.clientY,
-            itemId: item ? item.id : null,
-            onDelete: isUserCreated ? () => handleDeleteItem(item.id) : null,
-            onDownload: isResumeFile ? handleDownloadResumePDF : null
-        });
+        setLongPressTimer(timer);
+    };
+
+    const handleTouchEnd = (e, item = null) => {
+        if (!isMobile) return;
+
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            setLongPressTimer(null);
+
+            // If it was a short tap and we have an item, handle the click
+            if (item && !longPressTarget) {
+                if (item.type === 'folder') {
+                    openWindow('finder', item.name || item.title);
+                } else if (item.type === 'app') {
+                    openWindow(item.id);
+                } else if (item.type === 'resume-file') {
+                    openWindow('resume');
+                } else if (item.type === 'file') {
+                    const windowId = `file-${item.id}`;
+                    const existingWindow = windows.find((w) => w.id === windowId);
+                    if (existingWindow) {
+                        if (existingWindow.minimized) {
+                            setWindows(windows.map((w) => (w.id === windowId ? { ...w, minimized: false } : w)));
+                        }
+                        setActiveWindowId(windowId);
+                        focusWindow(windowId);
+                        return;
+                    }
+                    const content = () => <TextEditorApp fileName={item.name} initialContent={item.content || ''} onSave={(content) => {
+                        setDesktopItems(prev => prev.map(i => i.id === item.id ? { ...i, content } : i));
+                    }} />;
+                    const newWindow = { id: windowId, title: item.name, content, zIndex: windows.length + 1, minimized: false };
+                    setWindows([...windows, newWindow]);
+                    setActiveWindowId(windowId);
+                }
+            }
+        }
+        setLongPressTarget(null);
+    };
+
+    const handleTouchMove = (e) => {
+        if (!isMobile) return;
+
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            setLongPressTimer(null);
+        }
     };
 
     // Handle refresh with icon blink animation
@@ -997,10 +1045,36 @@ const Desktop = () => {
         }, 300);
     };
 
+    const handleContextMenu = (e, item = null) => {
+        e.preventDefault(); // Prevent browser's default context menu
+        const rect = desktopRef.current.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        setContextMenu({
+            x: e.clientX,
+            y: e.clientY,
+            onDelete: item ? () => {
+                if (item.type === 'folder' || item.type === 'file') {
+                    setDesktopItems(prev => prev.filter(i => i.id !== item.id));
+                }
+                setContextMenu(null);
+            } : null,
+            onDownload: item && item.type === 'resume-file' ? () => {
+                // Handle resume download
+                const link = document.createElement('a');
+                link.href = '/resume.pdf'; // Assuming resume PDF exists
+                link.download = 'Ashwath_Resume.pdf';
+                link.click();
+                setContextMenu(null);
+            } : null
+        });
+    };
+
 
     return (
         <div className="w-full h-screen overflow-hidden relative select-none font-sans bg-black">
-            <CustomCursor />
+            {!isMobile && <CustomCursor />}
 
             {/* Boot Screen */}
             <div className={`boot-screen absolute inset-0 bg-gradient-to-b from-gray-900 via-black to-black z-[9999] flex flex-col items-center justify-center ${!bootSequence ? 'hidden' : ''}`}>
@@ -1037,28 +1111,31 @@ const Desktop = () => {
                 className="desktop-content w-full h-full relative bg-cover bg-center"
                 style={{ backgroundImage: "url('/wall.png')" }}
                 onContextMenu={handleContextMenu}
+                onTouchStart={(e) => handleTouchStart(e)}
+                onTouchEnd={(e) => handleTouchEnd(e)}
+                onTouchMove={handleTouchMove}
             >
                 {/* Hero Text */}
-                < div className="absolute top-[45%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center z-0" >
+                <div className={`absolute ${isMobile ? 'top-[20%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center z-0 px-4' : 'top-[45%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center z-0'}`}>
                     <div className="mb-4 pointer-events-none">
-                        <h2 className="text-3xl font-light mb-3 tracking-wide text-white/80">
+                        <h2 className={`${isMobile ? 'text-lg' : 'text-3xl'} font-light mb-3 tracking-wide text-white/80`}>
                             Hey, I'm{' '}
                             <span className="font-bold bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500 bg-clip-text text-transparent animate-gradient-x">
                                 Ashwath
                             </span>
                             !
                         </h2>
-                        <p className="text-xl text-white/70 font-light tracking-wider">welcome to my</p>
+                        <p className={`${isMobile ? 'text-sm' : 'text-xl'} text-white/70 font-light tracking-wider`}>welcome to my</p>
                     </div>
-                    <h1 className="text-9xl font-black tracking-tighter bg-gradient-to-br from-white via-blue-100 to-purple-200 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(255,255,255,0.3)] cursor-pointer pointer-events-auto transition-all duration-300 hover:scale-110 hover:drop-shadow-[0_0_50px_rgba(147,51,234,0.6)] active:scale-95">
+                    <h1 className={`${isMobile ? 'text-3xl sm:text-4xl' : 'text-7xl lg:text-9xl'} font-black tracking-tighter bg-gradient-to-br from-white via-blue-100 to-purple-200 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(255,255,255,0.3)] cursor-pointer pointer-events-auto transition-all duration-300 hover:scale-110 hover:drop-shadow-[0_0_50px_rgba(147,51,234,0.6)] active:scale-95`}>
                         portfolio.
                     </h1>
                     <div className="mt-6 flex items-center justify-center gap-4 pointer-events-none">
-                        <div className="h-px w-16 bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
-                        <p className="text-sm text-white/60 font-medium tracking-widest uppercase">Full Stack Developer</p>
-                        <div className="h-px w-16 bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
+                        <div className="h-px w-12 sm:w-16 bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
+                        <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-white/60 font-medium tracking-widest uppercase`}>Full Stack Developer</p>
+                        <div className="h-px w-12 sm:w-16 bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
                     </div>
-                </div >
+                </div>
 
                 <TopBar
                     onOpenWindow={openWindow}
@@ -1072,7 +1149,7 @@ const Desktop = () => {
                     // Render static desktop icons first, then user-created items
                     [...desktopIcons, ...desktopItems].map((icon, index) => {
                         const ITEM_HEIGHT = 130;
-                        const START_Y = 50;
+                        const START_Y = isMobile ? 280 : 50; // Move icons further down on mobile to avoid hero text
                         const itemsPerColumn = Math.max(1, Math.floor((windowSize.height - START_Y - 50) / ITEM_HEIGHT));
                         const colIndex = Math.floor(index / itemsPerColumn);
                         const rowIndex = index % itemsPerColumn;
@@ -1095,11 +1172,15 @@ const Desktop = () => {
                                 enableResizing={false}
                                 bounds="parent"
                                 className="z-0"
+                                disableDragging={isMobile} // Disable dragging on mobile
                             >
                                 <div
-                                    className={`flex flex-col items-center gap-1 group cursor-move w-24 transition-opacity duration-150 ${isRefreshing ? 'opacity-0' : 'opacity-100'}`}
+                                    className={`flex flex-col items-center gap-1 group ${isMobile ? 'cursor-pointer' : 'cursor-move'} w-24 transition-opacity duration-150 ${isRefreshing ? 'opacity-0' : 'opacity-100'}`}
                                     onContextMenu={(e) => handleContextMenu(e, icon)}
-                                    onDoubleClick={() => {
+                                    onTouchStart={(e) => handleTouchStart(e, icon)}
+                                    onTouchEnd={(e) => handleTouchEnd(e, icon)}
+                                    onTouchMove={handleTouchMove}
+                                    onClick={isMobile ? () => {
                                         if (icon.type === 'folder') {
                                             openWindow('finder', icon.name || icon.title);
                                         } else if (icon.type === 'app') {
@@ -1126,7 +1207,35 @@ const Desktop = () => {
                                             setWindows([...windows, newWindow]);
                                             setActiveWindowId(windowId);
                                         }
-                                    }}
+                                    } : undefined}
+                                    onDoubleClick={!isMobile ? () => {
+                                        if (icon.type === 'folder') {
+                                            openWindow('finder', icon.name || icon.title);
+                                        } else if (icon.type === 'app') {
+                                            openWindow(icon.id);
+                                        } else if (icon.type === 'resume-file') {
+                                            // Open resume app
+                                            openWindow('resume');
+                                        } else if (icon.type === 'file') {
+                                            // Open file in TextEditorApp for editing
+                                            const windowId = `file-${icon.id}`;
+                                            const existingWindow = windows.find((w) => w.id === windowId);
+                                            if (existingWindow) {
+                                                if (existingWindow.minimized) {
+                                                    setWindows(windows.map((w) => (w.id === windowId ? { ...w, minimized: false } : w)));
+                                                }
+                                                setActiveWindowId(windowId);
+                                                focusWindow(windowId);
+                                                return;
+                                            }
+                                            const content = () => <TextEditorApp fileName={icon.name} initialContent={icon.content || ''} onSave={(content) => {
+                                                setDesktopItems(prev => prev.map(item => item.id === icon.id ? { ...item, content } : item));
+                                            }} />;
+                                            const newWindow = { id: windowId, title: icon.name, content, zIndex: windows.length + 1, minimized: false };
+                                            setWindows([...windows, newWindow]);
+                                            setActiveWindowId(windowId);
+                                        }
+                                    } : undefined}
                                 >
                                     <div className="w-16 h-16 bg-blue-400/20 rounded-xl flex items-center justify-center backdrop-blur-sm border border-blue-300/30 shadow-lg transition-all group-hover:bg-blue-400/30 group-hover:border-blue-300/50">
                                         {typeof icon.icon === 'string' ? (
@@ -1163,6 +1272,7 @@ const Desktop = () => {
                                     isFocused={activeWindowId === window.id}
                                     onFocus={() => focusWindow(window.id)}
                                     initialPosition={{ x: 100 + windows.indexOf(window) * 30, y: 100 + windows.indexOf(window) * 30 }}
+                                    isMobile={isMobile}
                                 />
                             </div>
                         )

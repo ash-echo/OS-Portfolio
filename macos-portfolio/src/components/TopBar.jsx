@@ -11,6 +11,7 @@ const TopBar = ({ onOpenWindow, desktopItems, windows, apps }) => {
     const [time, setTime] = useState(new Date());
     const [activePanel, setActivePanel] = useState(null); // 'battery', 'wifi', 'control', 'calendar', 'apple'
     const [searchOpen, setSearchOpen] = useState(false);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
     const batteryRef = useRef(null);
     const wifiRef = useRef(null);
@@ -21,6 +22,15 @@ const TopBar = ({ onOpenWindow, desktopItems, windows, apps }) => {
     useEffect(() => {
         const timer = setInterval(() => setTime(new Date()), 1000);
         return () => clearInterval(timer);
+    }, []);
+
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     useEffect(() => {
@@ -73,8 +83,8 @@ const TopBar = ({ onOpenWindow, desktopItems, windows, apps }) => {
 
     return (
         <>
-            <div className="fixed top-0 left-0 w-full h-8 bg-transparent backdrop-blur-md flex items-center justify-between px-4 z-[100] text-sm font-medium text-white select-none shadow-sm">
-                <div className="flex items-center gap-4">
+            <div className={`fixed top-0 left-0 w-full h-8 bg-transparent backdrop-blur-md flex items-center justify-between ${isMobile ? 'px-2' : 'px-4'} z-[100] text-sm font-medium text-white select-none shadow-sm`}>
+                <div className={`flex items-center ${isMobile ? 'gap-2' : 'gap-4'}`}>
                     <div
                         ref={appleIconRef}
                         onClick={() => togglePanel('apple')}
@@ -112,7 +122,7 @@ const TopBar = ({ onOpenWindow, desktopItems, windows, apps }) => {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className={`flex items-center ${isMobile ? 'gap-2' : 'gap-4'}`}>
                     <div
                         ref={batteryRef}
                         onClick={() => togglePanel('battery')}
@@ -139,7 +149,7 @@ const TopBar = ({ onOpenWindow, desktopItems, windows, apps }) => {
                     <div
                         ref={controlRef}
                         onClick={() => togglePanel('control')}
-                        className="hover:bg-white/20 px-2 rounded cursor-pointer transition-colors"
+                        className={`hover:bg-white/20 px-2 rounded cursor-pointer transition-colors ${isMobile ? 'hidden' : ''}`}
                     >
                         <div className="w-4 h-4 bg-white/20 rounded-full border border-white/40"></div>
                     </div>
