@@ -68,11 +68,11 @@ const Desktop = () => {
     });
 
     const apps = [
-        { id: 'finder', title: 'Finder', icon: '/1.png', color: 'bg-transparent', content: ProjectsApp },
-        { id: 'safari', title: 'Browser', icon: '/safari-icon.png', color: 'bg-transparent', content: SafariApp },
+        { id: 'finder', title: 'Finder', icon: '/1.png', color: 'bg-transparent', content: 'finder' }, // Special handling in openWindow
+        { id: 'safari', title: 'Browser', icon: '/safari-icon.png', color: 'bg-transparent', content: (props) => <SafariApp {...props} /> },
         { id: 'photos', title: 'Photos', icon: '/3.png', color: 'bg-white text-pink-500', content: PhotosApp },
         { id: 'contacts', title: 'About Me', icon: '/4.png', color: 'bg-gray-500', content: AboutMeApp },
-        { id: 'terminal', title: 'Terminal', icon: Terminal, color: 'bg-gray-900', content: TerminalApp },
+        { id: 'terminal', title: 'Terminal', icon: Terminal, color: 'bg-gray-900', content: (props) => <TerminalApp {...props} onOpenApp={openWindow} /> },
         { id: 'trash', title: 'Trash', icon: '/5.png', color: 'bg-gray-200 text-gray-600', content: TrashApp },
         { id: 'pokemon', title: 'Pokemon Fire Red', icon: '/poke.png', color: 'bg-red-600', content: PokemonApp },
         { id: 'sonic2', title: 'Sonic 2', icon: '/sonic.png', color: 'bg-blue-600', content: Sonic2App },
@@ -255,7 +255,11 @@ const Desktop = () => {
     }, [folderData]);
 
 
-    const openWindow = (appId, folderName = null) => {
+    const openWindow = (appId, folderNameOrTerminalFlag = null, openedFromTerminal = false) => {
+        // Handle the case where second parameter is a boolean (from terminal)
+        const folderName = typeof folderNameOrTerminalFlag === 'string' ? folderNameOrTerminalFlag : null;
+        openedFromTerminal = typeof folderNameOrTerminalFlag === 'boolean' ? folderNameOrTerminalFlag : openedFromTerminal;
+        
         const app = allApps.find((a) => a.id === appId);
         if (!app) return;
 
@@ -353,24 +357,31 @@ const Desktop = () => {
         }
 
         // Normal app windows
-        const windowId = appId;
-        const existingWindow = windows.find((w) => w.id === windowId);
-        if (existingWindow) {
-            if (existingWindow.minimized) {
-                setWindows(windows.map((w) => (w.id === windowId ? { ...w, minimized: false } : w)));
+        // If opened from terminal, create a new window with timestamp to make it unique
+        const windowId = openedFromTerminal ? `${appId}-${Date.now()}` : appId;
+        
+        // Only check for existing window if NOT opened from terminal
+        if (!openedFromTerminal) {
+            const existingWindow = windows.find((w) => w.id === appId);
+            if (existingWindow) {
+                if (existingWindow.minimized) {
+                    setWindows(windows.map((w) => (w.id === appId ? { ...w, minimized: false } : w)));
+                }
+                setActiveWindowId(appId);
+                focusWindow(appId);
+                return;
             }
-            setActiveWindowId(windowId);
-            focusWindow(windowId);
-            return;
         }
 
-        // For Finder, wrap with props
-        let content = app.content;
-        if (appId === 'finder') {
+        // Prepare content based on app type
+        let finalContent;
+        
+        if (appId === 'finder' || app.content === 'finder') {
+            // For Finder, always wrap with props
             const allFolders = [...desktopIcons.filter(i => i.type === 'folder'), ...desktopItems.filter(i => i.type === 'folder')];
-            content = (
+            finalContent = (
                 <ProjectsApp
-                    key="finder"
+                    key={`finder-${windowId}`}
                     allFolders={allFolders}
                     folderData={folderData}
                     onCreateFolder={(path) => {
@@ -402,26 +413,26 @@ const Desktop = () => {
                     }}
                     onOpenFile={(file) => {
                         // Open file in viewer
-                        const windowId = `file-${file.id}`;
-                        const existingFileWindow = windows.find((w) => w.id === windowId);
+                        const fileWindowId = `file-${file.id}`;
+                        const existingFileWindow = windows.find((w) => w.id === fileWindowId);
                         if (existingFileWindow) {
                             if (existingFileWindow.minimized) {
-                                setWindows(windows.map((w) => (w.id === windowId ? { ...w, minimized: false } : w)));
+                                setWindows(windows.map((w) => (w.id === fileWindowId ? { ...w, minimized: false } : w)));
                             }
-                            setActiveWindowId(windowId);
-                            focusWindow(windowId);
+                            setActiveWindowId(fileWindowId);
+                            focusWindow(fileWindowId);
                             return;
                         }
                         const fileContent = () => <DocumentViewerApp fileName={file.name} fileContent={file.content} />;
                         const newFileWindow = {
-                            id: windowId,
+                            id: fileWindowId,
                             title: file.name,
                             content: fileContent,
                             zIndex: windows.length + 1,
                             minimized: false,
                         };
                         setWindows([...windows, newFileWindow]);
-                        setActiveWindowId(windowId);
+                        setActiveWindowId(fileWindowId);
                     }}
                     onDeleteItem={(path, item, itemType) => {
                         // Delete item from folderData
@@ -450,17 +461,27 @@ const Desktop = () => {
                     }}
                 />
             );
+        } else if (appId === 'safari' && openedFromTerminal && typeof app.content === 'function') {
+            // Pass openedFromTerminal flag to Safari if opened from terminal
+            finalContent = app.content({ openedFromTerminal: true });
+        } else {
+            // For other apps, use content as-is
+            finalContent = typeof app.content === 'function' ? app.content() : app.content;
         }
 
         const newWindow = {
             id: windowId,
             title: app.title,
-            content,
+            content: finalContent,
             zIndex: windows.length + 1,
             minimized: false,
         };
         setWindows([...windows, newWindow]);
-        setActiveWindowId(windowId);
+        
+        // If opened from terminal, keep terminal active. Otherwise focus the new window
+        if (!openedFromTerminal) {
+            setActiveWindowId(windowId);
+        }
     };
 
     // Desktop context menu handlers
