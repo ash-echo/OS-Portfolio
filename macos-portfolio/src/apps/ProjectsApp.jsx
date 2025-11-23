@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom';
 import ResumeApp from './ResumeApp';
 import WorkApp from './WorkApp';
 import AboutMeApp from './AboutMeApp';
+import NameDialog from '../components/NameDialog';
 
 const ProjectsApp = ({
     allFolders = [],
@@ -19,6 +20,12 @@ const ProjectsApp = ({
     const [currentPath, setCurrentPath] = useState(initialPath); // null = root/main view
     const [contextMenu, setContextMenu] = useState(null);
     const [itemContextMenu, setItemContextMenu] = useState(null); // For right-clicking on specific items
+    const [nameDialog, setNameDialog] = useState({
+        isOpen: false,
+        type: null,
+        title: '',
+        placeholder: ''
+    });
 
     const sidebarItems = [
         {
@@ -71,17 +78,36 @@ const ProjectsApp = ({
     };
 
     const handleCreateNewFolder = () => {
-        if (onCreateFolder) {
-            onCreateFolder(currentPath);
-        }
+        setNameDialog({
+            isOpen: true,
+            type: 'folder',
+            title: 'Create New Folder',
+            placeholder: 'Enter folder name'
+        });
         setContextMenu(null);
     };
 
     const handleCreateNewFile = () => {
-        if (onCreateFile) {
-            onCreateFile(currentPath);
-        }
+        setNameDialog({
+            isOpen: true,
+            type: 'file',
+            title: 'Create New File',
+            placeholder: 'Enter file name'
+        });
         setContextMenu(null);
+    };
+
+    const handleNameDialogConfirm = (name) => {
+        if (nameDialog.type === 'folder') {
+            if (onCreateFolder) {
+                onCreateFolder(currentPath, name);
+            }
+        } else if (nameDialog.type === 'file') {
+            if (onCreateFile) {
+                onCreateFile(currentPath, name);
+            }
+        }
+        setNameDialog({ isOpen: false, type: null, title: '', placeholder: '' });
     };
 
     const handleFolderClick = (folderName) => {
@@ -213,6 +239,15 @@ const ProjectsApp = ({
                             <p className="text-sm">Right-click to create files or folders</p>
                         </div>
                     )}
+
+                {/* Name Dialog */}
+                <NameDialog
+                    isOpen={nameDialog.isOpen}
+                    onClose={() => setNameDialog({ isOpen: false, type: null, title: '', placeholder: '' })}
+                    onConfirm={handleNameDialogConfirm}
+                    title={nameDialog.title}
+                    placeholder={nameDialog.placeholder}
+                />
             </div>
         );
     };

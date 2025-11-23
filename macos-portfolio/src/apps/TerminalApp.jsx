@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-const TerminalApp = ({ onOpenApp }) => {
+const TerminalApp = ({ onOpenApp, onResetSession }) => {
     const [history, setHistory] = useState([
         { type: 'info', text: `Last login: ${new Date().toDateString()} on ttys000` },
         { type: 'output', text: 'Welcome to Ashwath\'s Portfolio Terminal!' },
@@ -31,6 +31,7 @@ const TerminalApp = ({ onOpenApp }) => {
   ls               - List available apps
   whoami           - Display user information
   clear            - Clear terminal screen
+  reset            - Reset session (clear all desktop items and folders)
   help             - Show this help message`
         }),
         
@@ -50,6 +51,15 @@ Portfolio: ashwathp-portfolio.vercel.app`
         }),
         
         clear: () => null,
+        
+        reset: () => {
+            if (onResetSession) {
+                onResetSession();
+                return { type: 'output', text: 'Session reset successfully. All desktop items, folders, and icon positions have been cleared.' };
+            } else {
+                return { type: 'output', text: 'Reset command not available.' };
+            }
+        },
         
         open: (args) => {
             const appMap = {

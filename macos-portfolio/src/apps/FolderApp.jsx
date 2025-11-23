@@ -1,8 +1,15 @@
 import React, { useState } from 'react';
 import { Folder, FileText, Plus } from 'lucide-react';
+import NameDialog from '../components/NameDialog';
 
 const FolderApp = ({ folderName, folderContent = { files: [], folders: [] }, onCreateFile, onCreateFolder, onOpenItem }) => {
     const [contextMenu, setContextMenu] = useState(null);
+    const [nameDialog, setNameDialog] = useState({
+        isOpen: false,
+        type: null,
+        title: '',
+        placeholder: ''
+    });
 
     const handleContextMenu = (e) => {
         e.preventDefault();
@@ -11,19 +18,36 @@ const FolderApp = ({ folderName, folderContent = { files: [], folders: [] }, onC
     };
 
     const handleCreateNewFolder = () => {
-        const name = prompt('Enter folder name:');
-        if (name && onCreateFolder) {
-            onCreateFolder(folderName, { id: Date.now().toString(), name, type: 'folder' });
-        }
+        setNameDialog({
+            isOpen: true,
+            type: 'folder',
+            title: 'Create New Folder',
+            placeholder: 'Enter folder name'
+        });
         setContextMenu(null);
     };
 
     const handleCreateNewFile = () => {
-        const name = prompt('Enter file name:');
-        if (name && onCreateFile) {
-            onCreateFile(folderName, { id: Date.now().toString(), name, content: '', type: 'file' });
-        }
+        setNameDialog({
+            isOpen: true,
+            type: 'file',
+            title: 'Create New File',
+            placeholder: 'Enter file name'
+        });
         setContextMenu(null);
+    };
+
+    const handleNameDialogConfirm = (name) => {
+        if (nameDialog.type === 'folder') {
+            if (onCreateFolder) {
+                onCreateFolder(folderName, name);
+            }
+        } else if (nameDialog.type === 'file') {
+            if (onCreateFile) {
+                onCreateFile(folderName, name);
+            }
+        }
+        setNameDialog({ isOpen: false, type: null, title: '', placeholder: '' });
     };
 
     const handleItemDoubleClick = (item) => {
@@ -103,6 +127,15 @@ const FolderApp = ({ folderName, folderContent = { files: [], folders: [] }, onC
                         <p className="text-sm">Right-click to create files or folders</p>
                     </div>
                 )}
+
+            {/* Name Dialog */}
+            <NameDialog
+                isOpen={nameDialog.isOpen}
+                onClose={() => setNameDialog({ isOpen: false, type: null, title: '', placeholder: '' })}
+                onConfirm={handleNameDialogConfirm}
+                title={nameDialog.title}
+                placeholder={nameDialog.placeholder}
+            />
         </div>
     );
 };

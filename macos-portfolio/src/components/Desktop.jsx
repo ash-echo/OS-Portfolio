@@ -5,6 +5,7 @@ import Dock from './Dock';
 import Window from './Window';
 import CustomCursor from './CustomCursor';
 import ContextMenu from './ContextMenu';
+import NameDialog from './NameDialog';
 import { Smile, Compass, Image as ImageIcon, User, Terminal, Trash2, Folder, FileText, Briefcase } from 'lucide-react';
 import ProjectsApp from '../apps/ProjectsApp';
 import AboutMeApp from '../apps/AboutMeApp';
@@ -37,19 +38,55 @@ const Desktop = () => {
     });
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
+    const getIconComponent = (icon) => {
+        if (typeof icon === 'string') {
+            if (icon.startsWith('/')) return icon; // image path
+            if (icon === 'folder') return Folder;
+            if (icon === 'file') return FileText;
+            return icon; // fallback
+        }
+        return icon; // component
+    };
+
     // Dynamic desktop items (created by user)
-    const [desktopItems, setDesktopItems] = useState([]);
+    const [desktopItems, setDesktopItems] = useState(() => {
+        try {
+            const saved = localStorage.getItem('desktopItems');
+            return saved ? JSON.parse(saved).map(item => ({
+                ...item,
+                icon: (typeof item.icon === 'string' ? item.icon : null) || (item.type === 'folder' ? 'folder' : 'file')
+            })) : [];
+        } catch (error) {
+            console.error('Error loading desktop items from localStorage:', error);
+            return [];
+        }
+    });
 
     // Store custom icon positions
-    const [iconPositions, setIconPositions] = useState({});
+    const [iconPositions, setIconPositions] = useState(() => {
+        try {
+            const saved = localStorage.getItem('iconPositions');
+            return saved ? JSON.parse(saved) : {};
+        } catch (error) {
+            console.error('Error loading icon positions from localStorage:', error);
+            return {};
+        }
+    });
 
     // Long press state for mobile
     const [longPressTimer, setLongPressTimer] = useState(null);
     const [longPressTarget, setLongPressTarget] = useState(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
-    // Folder content (nested files and folders)
-    const [folderData, setFolderData] = useState({
+    // Name dialog state
+    const [nameDialog, setNameDialog] = useState({
+        isOpen: false,
+        type: null, // 'folder' or 'file'
+        title: '',
+        placeholder: ''
+    });
+
+    const initialFolderData = {
         'Nike Ecommerce\nWebsite Application': {
             files: [
                 { id: 'nike-readme', name: 'README.md', content: 'Nike Ecommerce Website Application\n\nA full-stack e-commerce platform built with React and Node.js.\n\nFeatures:\n- Product catalog with filtering\n- Shopping cart functionality\n- Secure checkout process\n- User authentication\n- Order tracking\n\nTech Stack: React, Node.js, Express, MongoDB', type: 'file' }
@@ -68,14 +105,23 @@ const Desktop = () => {
             ],
             folders: []
         }
-    });
+    };
 
-    const apps = [
+    // Folder content (nested files and folders)
+    const [folderData, setFolderData] = useState(() => {
+        try {
+            const saved = localStorage.getItem('folderData');
+            return saved ? JSON.parse(saved) : initialFolderData;
+        } catch (error) {
+            console.error('Error loading folder data from localStorage:', error);
+            return initialFolderData;
+        }
+    });    const apps = [
         { id: 'finder', title: 'Finder', icon: '/1.png', color: 'bg-transparent', content: 'finder' }, // Special handling in openWindow
         { id: 'safari', title: 'Browser', icon: '/safari-icon.png', color: 'bg-transparent', content: (props) => <SafariApp {...props} /> },
         { id: 'photos', title: 'Photos', icon: '/3.png', color: 'bg-white text-pink-500', content: PhotosApp },
         { id: 'contacts', title: 'About Me', icon: '/4.png', color: 'bg-gray-500', content: AboutMeApp },
-        { id: 'terminal', title: 'Terminal', icon: Terminal, color: 'bg-gray-900', content: (props) => <TerminalApp {...props} onOpenApp={openWindow} /> },
+        { id: 'terminal', title: 'Terminal', icon: Terminal, color: 'bg-gray-900', content: (props) => <TerminalApp {...props} onOpenApp={openWindow} onResetSession={resetSession} /> },
         { id: 'trash', title: 'Trash', icon: '/5.png', color: 'bg-gray-200 text-gray-600', content: TrashApp },
         { id: 'pokemon', title: 'Pokemon Fire Red', icon: '/poke.png', color: 'bg-red-600', content: PokemonApp },
         { id: 'sonic2', title: 'Sonic 2', icon: '/sonic.png', color: 'bg-blue-600', content: Sonic2App },
@@ -87,13 +133,20 @@ const Desktop = () => {
         { id: 'work', title: 'Projects', icon: Briefcase, color: 'bg-purple-600', content: WorkApp },
     ];
 
-    const allApps = [...apps, ...hiddenApps];
+    const resetSession = () => {
+        setDesktopItems([]);
+        setFolderData(initialFolderData);
+        setIconPositions({});
+        localStorage.removeItem('desktopItems');
+        localStorage.removeItem('folderData');
+        localStorage.removeItem('iconPositions');
+    };
 
     const desktopIcons = [
-        { id: 'resume-file', title: 'Ashwath_Resume.docx', icon: FileText, type: 'resume-file' },
-        { id: 'nike', title: 'Nike Ecommerce\nWebsite Application', icon: Folder, type: 'folder' },
-        { id: 'ai', title: 'AI Resume Analyzer', icon: Folder, type: 'folder' },
-        { id: 'food', title: 'Food Delivery App', icon: Folder, type: 'folder' },
+        { id: 'resume-file', title: 'Ashwath_Resume.docx', icon: 'file', type: 'resume-file' },
+        { id: 'nike', title: 'Nike Ecommerce\nWebsite Application', icon: 'folder', type: 'folder' },
+        { id: 'ai', title: 'AI Resume Analyzer', icon: 'folder', type: 'folder' },
+        { id: 'food', title: 'Food Delivery App', icon: 'folder', type: 'folder' },
         { id: 'pokemon', title: 'Pokemon Fire Red', icon: '/poke.png', type: 'app' },
         { id: 'sonic2', title: 'Sonic 2', icon: '/sonic.png', type: 'app' },
     ];
@@ -126,6 +179,33 @@ const Desktop = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    // Save desktopItems to localStorage whenever it changes
+    useEffect(() => {
+        try {
+            localStorage.setItem('desktopItems', JSON.stringify(desktopItems));
+        } catch (error) {
+            console.error('Error saving desktop items to localStorage:', error);
+        }
+    }, [desktopItems]);
+
+    // Save folderData to localStorage whenever it changes
+    useEffect(() => {
+        try {
+            localStorage.setItem('folderData', JSON.stringify(folderData));
+        } catch (error) {
+            console.error('Error saving folder data to localStorage:', error);
+        }
+    }, [folderData]);
+
+    // Save iconPositions to localStorage whenever it changes
+    useEffect(() => {
+        try {
+            localStorage.setItem('iconPositions', JSON.stringify(iconPositions));
+        } catch (error) {
+            console.error('Error saving icon positions to localStorage:', error);
+        }
+    }, [iconPositions]);
+
     // Memoize the ProjectsApp content to avoid recreating it on every render
     const createFinderContent = (folderName) => {
         const allFolders = [...desktopIcons.filter(i => i.type === 'folder'), ...desktopItems.filter(i => i.type === 'folder')];
@@ -136,33 +216,32 @@ const Desktop = () => {
                 allFolders={allFolders}
                 folderData={folderData}
                 initialPath={folderName}
-                onCreateFolder={(path) => {
-                    const name = prompt('Enter folder name:');
-                    if (!name) return;
+                onCreateFolder={(path, name) => {
+                    const id = Date.now().toString();
+                    const newFolder = { id, name, type: 'folder' };
                     if (!folderName && !path) {
-                        const newItem = { id: Date.now().toString(), name, icon: Folder, type: 'folder' };
+                        const newItem = { id, name, icon: 'folder', type: 'folder' };
                         setDesktopItems((prev) => [...prev, newItem]);
                         setFolderData((prev) => ({ ...prev, [name]: { files: [], folders: [] } }));
                     } else {
                         const targetPath = path || folderName;
                         setFolderData((prev) => {
                             const folder = prev[targetPath] || { files: [], folders: [] };
-                            return { ...prev, [targetPath]: { ...folder, folders: [...folder.folders, { id: Date.now().toString(), name, type: 'folder' }] } };
+                            return { ...prev, [targetPath]: { ...folder, folders: [...folder.folders, newFolder] } };
                         });
                     }
                 }}
-                onCreateFile={(path) => {
-                    const name = prompt('Enter file name:');
-                    if (!name) return;
+                onCreateFile={(path, name) => {
+                    const id = Date.now().toString();
+                    const newFile = { id, name, content: '', type: 'file' };
                     if (!folderName && !path) {
-                        const id = Date.now().toString();
-                        const newItem = { id, name, icon: FileText, type: 'file', content: '' };
+                        const newItem = { id, name, icon: 'file', type: 'file', content: '' };
                         setDesktopItems((prev) => [...prev, newItem]);
                     } else {
                         const targetPath = path || folderName;
                         setFolderData((prev) => {
                             const folder = prev[targetPath] || { files: [], folders: [] };
-                            return { ...prev, [targetPath]: { ...folder, files: [...folder.files, { id: Date.now().toString(), name, content: '', type: 'file' }] } };
+                            return { ...prev, [targetPath]: { ...folder, files: [...folder.files, newFile] } };
                         });
                     }
                 }}
@@ -260,6 +339,7 @@ const Desktop = () => {
         }
     }, [folderData]);
 
+    const allApps = [...apps, ...hiddenApps];
 
     const openWindow = (appId, folderNameOrTerminalFlag = null, openedFromTerminal = false) => {
         // Handle the case where second parameter is a boolean (from terminal)
@@ -280,14 +360,10 @@ const Desktop = () => {
                     allFolders={allFolders}
                     folderData={folderData}
                     initialPath={folderName}
-                    onCreateFolder={(path) => {
-                        const name = prompt('Enter folder name:');
-                        if (!name) return;
+                    onCreateFolder={(path, name) => {
                         handleCreateFolder(path || folderName, { id: Date.now().toString(), name, type: 'folder' });
                     }}
-                    onCreateFile={(path) => {
-                        const name = prompt('Enter file name:');
-                        if (!name) return;
+                    onCreateFile={(path, name) => {
                         handleCreateFile(path || folderName, { id: Date.now().toString(), name, content: '', type: 'file' });
                     }}
                     onOpenFolder={(folderPath) => {
@@ -390,25 +466,26 @@ const Desktop = () => {
                     key={`finder-${windowId}`}
                     allFolders={allFolders}
                     folderData={folderData}
-                    onCreateFolder={(path) => {
-                        const name = prompt('Enter folder name:');
-                        if (!name) return;
+                    onCreateFolder={(path, name) => {
                         const targetFolder = path || 'desktop';
                         if (targetFolder === 'desktop') {
                             // Create on desktop
-                            createNewFolder();
+                            const id = Date.now().toString();
+                            const newItem = { id, name, icon: 'folder', type: 'folder' };
+                            setDesktopItems((prev) => [...prev, newItem]);
+                            setFolderData((prev) => ({ ...prev, [name]: { files: [], folders: [] } }));
                         } else {
                             // Create in specific folder
                             handleCreateFolder(path, { id: Date.now().toString(), name, type: 'folder' });
                         }
                     }}
-                    onCreateFile={(path) => {
-                        const name = prompt('Enter file name:');
-                        if (!name) return;
+                    onCreateFile={(path, name) => {
                         const targetFolder = path || 'desktop';
                         if (targetFolder === 'desktop') {
                             // Create on desktop
-                            createNewFile();
+                            const id = Date.now().toString();
+                            const newItem = { id, name, icon: 'file', type: 'file', content: '' };
+                            setDesktopItems((prev) => [...prev, newItem]);
                         } else {
                             // Create in specific folder
                             handleCreateFile(path, { id: Date.now().toString(), name, content: '', type: 'file' });
@@ -492,20 +569,39 @@ const Desktop = () => {
 
     // Desktop context menu handlers
     const createNewFolder = () => {
-        const name = prompt('Enter folder name:');
-        if (!name) return;
-        const newItem = { id: Date.now().toString(), name, icon: Folder, type: 'folder' };
-        setDesktopItems((prev) => [...prev, newItem]);
-        // Initialize empty folder in folderData
-        setFolderData((prev) => ({ ...prev, [name]: { files: [], folders: [] } }));
+        setNameDialog({
+            isOpen: true,
+            type: 'folder',
+            title: 'Create New Folder',
+            placeholder: 'Enter folder name'
+        });
+        setContextMenu(null);
     };
 
     const createNewFile = () => {
-        const name = prompt('Enter file name:');
-        if (!name) return;
-        const id = Date.now().toString();
-        const newItem = { id, name, icon: FileText, type: 'file', content: '' };
-        setDesktopItems((prev) => [...prev, newItem]);
+        setNameDialog({
+            isOpen: true,
+            type: 'file',
+            title: 'Create New File',
+            placeholder: 'Enter file name'
+        });
+        setContextMenu(null);
+    };
+
+    // Handle dialog confirm
+    const handleNameDialogConfirm = (name) => {
+        if (nameDialog.type === 'folder') {
+            const id = Date.now().toString();
+            const newItem = { id, name, icon: 'folder', type: 'folder' };
+            setDesktopItems((prev) => [...prev, newItem]);
+            // Initialize empty folder in folderData
+            setFolderData((prev) => ({ ...prev, [name]: { files: [], folders: [] } }));
+        } else if (nameDialog.type === 'file') {
+            const id = Date.now().toString();
+            const newItem = { id, name, icon: 'file', type: 'file', content: '' };
+            setDesktopItems((prev) => [...prev, newItem]);
+        }
+        setNameDialog({ isOpen: false, type: null, title: '', placeholder: '' });
     };
 
     // Handlers for creating items inside folders
@@ -1180,7 +1276,7 @@ const Desktop = () => {
                                     onTouchStart={(e) => handleTouchStart(e, icon)}
                                     onTouchEnd={(e) => handleTouchEnd(e, icon)}
                                     onTouchMove={handleTouchMove}
-                                    onClick={isMobile ? () => {
+                                    onDoubleClick={() => {
                                         if (icon.type === 'folder') {
                                             openWindow('finder', icon.name || icon.title);
                                         } else if (icon.type === 'app') {
@@ -1207,48 +1303,23 @@ const Desktop = () => {
                                             setWindows([...windows, newWindow]);
                                             setActiveWindowId(windowId);
                                         }
-                                    } : undefined}
-                                    onDoubleClick={!isMobile ? () => {
-                                        if (icon.type === 'folder') {
-                                            openWindow('finder', icon.name || icon.title);
-                                        } else if (icon.type === 'app') {
-                                            openWindow(icon.id);
-                                        } else if (icon.type === 'resume-file') {
-                                            // Open resume app
-                                            openWindow('resume');
-                                        } else if (icon.type === 'file') {
-                                            // Open file in TextEditorApp for editing
-                                            const windowId = `file-${icon.id}`;
-                                            const existingWindow = windows.find((w) => w.id === windowId);
-                                            if (existingWindow) {
-                                                if (existingWindow.minimized) {
-                                                    setWindows(windows.map((w) => (w.id === windowId ? { ...w, minimized: false } : w)));
-                                                }
-                                                setActiveWindowId(windowId);
-                                                focusWindow(windowId);
-                                                return;
-                                            }
-                                            const content = () => <TextEditorApp fileName={icon.name} initialContent={icon.content || ''} onSave={(content) => {
-                                                setDesktopItems(prev => prev.map(item => item.id === icon.id ? { ...item, content } : item));
-                                            }} />;
-                                            const newWindow = { id: windowId, title: icon.name, content, zIndex: windows.length + 1, minimized: false };
-                                            setWindows([...windows, newWindow]);
-                                            setActiveWindowId(windowId);
-                                        }
-                                    } : undefined}
+                                    }}
                                 >
                                     <div className="w-16 h-16 bg-blue-400/20 rounded-xl flex items-center justify-center backdrop-blur-sm border border-blue-300/30 shadow-lg transition-all group-hover:bg-blue-400/30 group-hover:border-blue-300/50">
-                                        {typeof icon.icon === 'string' ? (
-                                            <img
-                                                src={icon.icon}
-                                                alt={icon.title || icon.name}
-                                                className="w-10 h-10 object-contain pointer-events-none"
-                                                draggable={false}
-                                                onDragStart={(e) => e.preventDefault()}
-                                            />
-                                        ) : (
-                                            <icon.icon size={40} className="text-blue-200 fill-blue-400/30" strokeWidth={1.5} />
-                                        )}
+                                        {(() => {
+                                            const IconComponent = getIconComponent(icon.icon);
+                                            return typeof IconComponent === 'string' ? (
+                                                <img
+                                                    src={IconComponent}
+                                                    alt={icon.title || icon.name}
+                                                    className="w-10 h-10 object-contain pointer-events-none"
+                                                    draggable={false}
+                                                    onDragStart={(e) => e.preventDefault()}
+                                                />
+                                            ) : (
+                                                <IconComponent size={40} className="text-blue-200 fill-blue-400/30" strokeWidth={1.5} />
+                                            );
+                                        })()}
                                     </div>
                                     <span className="text-white text-xs font-medium text-center drop-shadow-md px-1 rounded bg-black/0 group-hover:bg-blue-600/80 transition-colors leading-tight whitespace-pre-line">
                                         {icon.title || icon.name}
@@ -1296,6 +1367,15 @@ const Desktop = () => {
                         />
                     )
                 }
+
+                {/* Name Dialog */}
+                <NameDialog
+                    isOpen={nameDialog.isOpen}
+                    onClose={() => setNameDialog({ isOpen: false, type: null, title: '', placeholder: '' })}
+                    onConfirm={handleNameDialogConfirm}
+                    title={nameDialog.title}
+                    placeholder={nameDialog.placeholder}
+                />
             </div >
         </div >
     );
