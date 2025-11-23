@@ -70,6 +70,7 @@ const Desktop = () => {
         { id: 'sonic2', title: 'Sonic 2', icon: '/sonic.png', type: 'app' },
     ];
 
+
     useEffect(() => {
         const tl = gsap.timeline({
             onComplete: () => {
@@ -84,36 +85,35 @@ const Desktop = () => {
 
     // Update all finder windows when folderData changes
     useEffect(() => {
-        // Find all finder windows and update their content
         setWindows(prevWindows => prevWindows.map(window => {
-            // Check if this is a finder window (id starts with 'finder-')
-            if (window.id.startsWith('finder-')) {
-                const folderName = window.id.replace('finder-', '');
+            const isFinder = window.id === 'finder' || window.id.startsWith('finder-');
+            if (isFinder) {
+                const folderName = window.id === 'finder' ? null : window.id.replace('finder-', '');
                 const allFolders = [...desktopIcons.filter(i => i.type === 'folder'), ...desktopItems.filter(i => i.type === 'folder')];
 
-                // Recreate the content with updated folderData
-                const content = () => (
+                const content = (
                     <ProjectsApp
+                        key={folderName || 'finder'}
                         allFolders={allFolders}
                         folderData={folderData}
-                        initialPath={folderName === 'finder' ? null : folderName}
+                        initialPath={folderName}
                         onCreateFolder={(path) => {
                             const name = prompt('Enter folder name:');
                             if (!name) return;
-                            const targetPath = path || folderName;
-                            if (folderName === 'finder') {
+                            if (!folderName && !path) {
                                 createNewFolder();
                             } else {
+                                const targetPath = path || folderName;
                                 handleCreateFolder(targetPath, { id: Date.now().toString(), name, type: 'folder' });
                             }
                         }}
                         onCreateFile={(path) => {
                             const name = prompt('Enter file name:');
                             if (!name) return;
-                            const targetPath = path || folderName;
-                            if (folderName === 'finder') {
+                            if (!folderName && !path) {
                                 createNewFile();
                             } else {
+                                const targetPath = path || folderName;
                                 handleCreateFile(targetPath, { id: Date.now().toString(), name, content: '', type: 'file' });
                             }
                         }}
@@ -142,7 +142,6 @@ const Desktop = () => {
                         }}
                     />
                 );
-
                 return { ...window, content };
             }
             return window;
@@ -158,9 +157,9 @@ const Desktop = () => {
             const windowId = `${appId}-${folderName}`;
             const allFolders = [...desktopIcons.filter(i => i.type === 'folder'), ...desktopItems.filter(i => i.type === 'folder')];
 
-            // Create content function that will be called on each render
-            const createContent = () => () => (
+            const content = (
                 <ProjectsApp
+                    key={folderName}
                     allFolders={allFolders}
                     folderData={folderData}
                     initialPath={folderName}
@@ -204,9 +203,8 @@ const Desktop = () => {
 
             const existingWindow = windows.find((w) => w.id === windowId);
             if (existingWindow) {
-                // Update existing window content with new folderData
                 setWindows(windows.map((w) =>
-                    w.id === windowId ? { ...w, content: createContent() } : w
+                    w.id === windowId ? { ...w, content } : w
                 ));
                 if (existingWindow.minimized) {
                     setWindows(windows.map((w) => (w.id === windowId ? { ...w, minimized: false } : w)));
@@ -215,13 +213,11 @@ const Desktop = () => {
                 focusWindow(windowId);
                 return;
             }
-            const newWindow = { id: windowId, title: folderName, content: createContent(), zIndex: windows.length + 1, minimized: false };
+            const newWindow = { id: windowId, title: folderName, content, zIndex: windows.length + 1, minimized: false };
             setWindows([...windows, newWindow]);
             setActiveWindowId(windowId);
             return;
         }
-
-        // Normal app windows
 
         // Normal app windows
         const windowId = appId;
@@ -239,8 +235,9 @@ const Desktop = () => {
         let content = app.content;
         if (appId === 'finder') {
             const allFolders = [...desktopIcons.filter(i => i.type === 'folder'), ...desktopItems.filter(i => i.type === 'folder')];
-            content = () => (
+            content = (
                 <ProjectsApp
+                    key="finder"
                     allFolders={allFolders}
                     folderData={folderData}
                     onCreateFolder={(path) => {
@@ -399,26 +396,26 @@ const Desktop = () => {
     };
 
     return (
-        <div className="w-full h-screen overflow-hidden relative select-none font-sans bg-black">
+        <div className="w-full h-screen overflow-hidden relative select-none font-sans bg-black" >
             <CustomCursor />
 
             {/* Boot Screen */}
-            <div className={`boot-screen absolute inset-0 bg-black z-[9999] flex flex-col items-center justify-center ${!bootSequence ? 'hidden' : ''}`}>
+            <div className={`boot-screen absolute inset-0 bg-black z-[9999] flex flex-col items-center justify-center ${!bootSequence ? 'hidden' : ''}`} >
                 <div className="boot-progress mb-4">
                     <div className="boot-bar"></div>
                 </div>
                 <img src="/logo.png" alt="logo" className="boot-logo w-24 h-24" />
-            </div>
+            </div >
 
             {/* Desktop Content */}
-            <div
+            < div
                 ref={desktopRef}
                 className="desktop-content w-full h-full relative bg-cover bg-center"
                 style={{ backgroundImage: "url('/wall.png')" }}
                 onContextMenu={handleContextMenu}
             >
                 {/* Hero Text */}
-                <div className="absolute top-[45%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center z-0">
+                < div className="absolute top-[45%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center z-0" >
                     <div className="mb-4 pointer-events-none">
                         <h2 className="text-3xl font-light mb-3 tracking-wide text-white/80">
                             Hey, I'm{' '}
@@ -437,65 +434,67 @@ const Desktop = () => {
                         <p className="text-sm text-white/60 font-medium tracking-widest uppercase">Full Stack Developer</p>
                         <div className="h-px w-16 bg-gradient-to-r from-transparent via-white/50 to-transparent"></div>
                     </div>
-                </div>
+                </div >
 
                 <TopBar />
 
                 {/* Desktop Icons - Draggable */}
-                {[...desktopIcons, ...desktopItems].map((icon, index) => (
-                    <Rnd
-                        key={icon.id}
-                        default={{
-                            x: window.innerWidth - 120,
-                            y: 50 + index * 150, // Increased vertical spacing to prevent overlap
-                            width: 100,
-                            height: 100,
-                        }}
-                        enableResizing={false}
-                        bounds="parent"
-                        className="z-0"
-                    >
-                        <div
-                            className="flex flex-col items-center gap-1 group cursor-move w-24"
-                            onDoubleClick={() => {
-                                if (icon.type === 'folder') {
-                                    openWindow('finder', icon.name || icon.title);
-                                } else if (icon.type === 'app') {
-                                    openWindow(icon.id);
-                                } else if (icon.type === 'file') {
-                                    // Open file in TextEditorApp for editing
-                                    const windowId = `file-${icon.id}`;
-                                    const existingWindow = windows.find((w) => w.id === windowId);
-                                    if (existingWindow) {
-                                        if (existingWindow.minimized) {
-                                            setWindows(windows.map((w) => (w.id === windowId ? { ...w, minimized: false } : w)));
-                                        }
-                                        setActiveWindowId(windowId);
-                                        focusWindow(windowId);
-                                        return;
-                                    }
-                                    const content = () => <TextEditorApp fileName={icon.name} initialContent={icon.content || ''} onSave={(content) => {
-                                        setDesktopItems(prev => prev.map(item => item.id === icon.id ? { ...item, content } : item));
-                                    }} />;
-                                    const newWindow = { id: windowId, title: icon.name, content, zIndex: windows.length + 1, minimized: false };
-                                    setWindows([...windows, newWindow]);
-                                    setActiveWindowId(windowId);
-                                }
+                {
+                    [...desktopIcons, ...desktopItems].map((icon, index) => (
+                        <Rnd
+                            key={icon.id}
+                            default={{
+                                x: window.innerWidth - 120,
+                                y: 50 + index * 150, // Increased vertical spacing to prevent overlap
+                                width: 100,
+                                height: 100,
                             }}
+                            enableResizing={false}
+                            bounds="parent"
+                            className="z-0"
                         >
-                            <div className="w-16 h-16 bg-blue-400/20 rounded-xl flex items-center justify-center backdrop-blur-sm border border-blue-300/30 shadow-lg transition-all group-hover:bg-blue-400/30 group-hover:border-blue-300/50">
-                                {typeof icon.icon === 'string' ? (
-                                    <img src={icon.icon} alt={icon.title || icon.name} className="w-10 h-10 object-contain" />
-                                ) : (
-                                    <icon.icon size={40} className="text-blue-200 fill-blue-400/30" strokeWidth={1.5} />
-                                )}
+                            <div
+                                className="flex flex-col items-center gap-1 group cursor-move w-24"
+                                onDoubleClick={() => {
+                                    if (icon.type === 'folder') {
+                                        openWindow('finder', icon.name || icon.title);
+                                    } else if (icon.type === 'app') {
+                                        openWindow(icon.id);
+                                    } else if (icon.type === 'file') {
+                                        // Open file in TextEditorApp for editing
+                                        const windowId = `file-${icon.id}`;
+                                        const existingWindow = windows.find((w) => w.id === windowId);
+                                        if (existingWindow) {
+                                            if (existingWindow.minimized) {
+                                                setWindows(windows.map((w) => (w.id === windowId ? { ...w, minimized: false } : w)));
+                                            }
+                                            setActiveWindowId(windowId);
+                                            focusWindow(windowId);
+                                            return;
+                                        }
+                                        const content = () => <TextEditorApp fileName={icon.name} initialContent={icon.content || ''} onSave={(content) => {
+                                            setDesktopItems(prev => prev.map(item => item.id === icon.id ? { ...item, content } : item));
+                                        }} />;
+                                        const newWindow = { id: windowId, title: icon.name, content, zIndex: windows.length + 1, minimized: false };
+                                        setWindows([...windows, newWindow]);
+                                        setActiveWindowId(windowId);
+                                    }
+                                }}
+                            >
+                                <div className="w-16 h-16 bg-blue-400/20 rounded-xl flex items-center justify-center backdrop-blur-sm border border-blue-300/30 shadow-lg transition-all group-hover:bg-blue-400/30 group-hover:border-blue-300/50">
+                                    {typeof icon.icon === 'string' ? (
+                                        <img src={icon.icon} alt={icon.title || icon.name} className="w-10 h-10 object-contain" />
+                                    ) : (
+                                        <icon.icon size={40} className="text-blue-200 fill-blue-400/30" strokeWidth={1.5} />
+                                    )}
+                                </div>
+                                <span className="text-white text-xs font-medium text-center drop-shadow-md px-1 rounded bg-black/0 group-hover:bg-blue-600/80 transition-colors leading-tight whitespace-pre-line">
+                                    {icon.title || icon.name}
+                                </span>
                             </div>
-                            <span className="text-white text-xs font-medium text-center drop-shadow-md px-1 rounded bg-black/0 group-hover:bg-blue-600/80 transition-colors leading-tight whitespace-pre-line">
-                                {icon.title || icon.name}
-                            </span>
-                        </div>
-                    </Rnd>
-                ))}
+                        </Rnd>
+                    ))
+                }
 
                 <div className="relative z-10 w-full h-full pointer-events-none">
                     {windows.map((window) =>
@@ -519,17 +518,19 @@ const Desktop = () => {
                 <Dock apps={apps} openApps={windows.map((w) => w.id.split('-')[0])} onOpenApp={openWindow} />
 
                 {/* Context Menu */}
-                {contextMenu && (
-                    <ContextMenu
-                        x={contextMenu.x}
-                        y={contextMenu.y}
-                        onClose={() => setContextMenu(null)}
-                        onNewFolder={createNewFolder}
-                        onNewFile={createNewFile}
-                    />
-                )}
-            </div>
-        </div>
+                {
+                    contextMenu && (
+                        <ContextMenu
+                            x={contextMenu.x}
+                            y={contextMenu.y}
+                            onClose={() => setContextMenu(null)}
+                            onNewFolder={createNewFolder}
+                            onNewFile={createNewFile}
+                        />
+                    )
+                }
+            </div >
+        </div >
     );
 };
 

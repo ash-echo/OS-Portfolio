@@ -72,7 +72,7 @@ const Window = ({ id, title, content: Content, onClose, onMinimize, isFocused, o
 
                 {/* Window Content */}
                 <div className="flex-1 overflow-hidden bg-white relative">
-                    {Content && <Content />}
+                    {typeof Content === 'function' ? <Content /> : Content}
                 </div>
             </div>
         </Rnd>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Folder, FileText, Clock, Briefcase, User, Trash2, Home, ChevronRight, Plus } from 'lucide-react';
+import ReactDOM from 'react-dom';
 
 const ProjectsApp = ({
     allFolders = [],
@@ -37,10 +38,10 @@ const ProjectsApp = ({
         },
     ];
 
+
     const handleContextMenu = (e) => {
         e.preventDefault();
         e.stopPropagation();
-        // Adjust for custom cursor offset (-3px, -3px)
         setContextMenu({ x: e.clientX + 3, y: e.clientY + 3 });
     };
 
@@ -85,10 +86,10 @@ const ProjectsApp = ({
                 onClick={() => setContextMenu(null)}
             >
                 {/* Context Menu */}
-                {contextMenu && (
+                {contextMenu && ReactDOM.createPortal(
                     <div
-                        className="fixed bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-50"
-                        style={{ left: contextMenu.x, top: contextMenu.y }}
+                        className="fixed bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-[9999]"
+                        style={{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <button
@@ -103,7 +104,8 @@ const ProjectsApp = ({
                         >
                             <FileText size={16} /> New File
                         </button>
-                    </div>
+                    </div>,
+                    document.body
                 )}
 
                 {/* Breadcrumbs */}
@@ -282,41 +284,43 @@ const ProjectsApp = ({
     };
 
     return (
-        <div className="h-full flex bg-white">
+        <div className="h-full flex bg-white" >
             {/* Sidebar */}
-            <div className="w-48 bg-gray-50 border-r border-gray-200 p-4 overflow-auto">
-                {sidebarItems.map((section, idx) => (
-                    <div key={idx} className="mb-6">
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2 px-2">{section.section}</h3>
-                        {section.items.map((item) => (
-                            <button
-                                key={item.id}
-                                onClick={() => {
-                                    if (item.isFolder) {
-                                        handleFolderClick(item.folderName);
-                                    } else {
-                                        setActiveTab(item.id);
-                                        setCurrentPath(null);
-                                    }
-                                }}
-                                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors ${(activeTab === item.id || (currentPath && currentPath.startsWith(item.folderName)))
-                                    ? 'bg-blue-100 text-blue-600'
-                                    : 'text-gray-700 hover:bg-gray-200'
-                                    }`}
-                            >
-                                <item.icon size={16} className={item.color || ''} />
-                                <span className="truncate">{item.label}</span>
-                            </button>
-                        ))}
-                    </div>
-                ))}
-            </div>
+            < div className="w-48 bg-gray-50 border-r border-gray-200 p-4 overflow-auto" >
+                {
+                    sidebarItems.map((section, idx) => (
+                        <div key={idx} className="mb-6">
+                            <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2 px-2">{section.section}</h3>
+                            {section.items.map((item) => (
+                                <button
+                                    key={item.id}
+                                    onClick={() => {
+                                        if (item.isFolder) {
+                                            handleFolderClick(item.folderName);
+                                        } else {
+                                            setActiveTab(item.id);
+                                            setCurrentPath(null);
+                                        }
+                                    }}
+                                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm transition-colors ${(activeTab === item.id || (currentPath && currentPath.startsWith(item.folderName)))
+                                        ? 'bg-blue-100 text-blue-600'
+                                        : 'text-gray-700 hover:bg-gray-200'
+                                        }`}
+                                >
+                                    <item.icon size={16} className={item.color || ''} />
+                                    <span className="truncate">{item.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    ))
+                }
+            </div >
 
             {/* Main Content */}
-            <div className="flex-1 overflow-hidden">
+            < div className="flex-1 overflow-hidden" >
                 {content[activeTab] || content['folder-view']}
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 
