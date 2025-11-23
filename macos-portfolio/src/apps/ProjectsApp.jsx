@@ -9,11 +9,13 @@ const ProjectsApp = ({
     onCreateFolder,
     onCreateFile,
     onOpenFolder,
-    onOpenFile
+    onOpenFile,
+    onDeleteItem
 }) => {
     const [activeTab, setActiveTab] = useState(initialPath ? 'folder-view' : 'resume');
     const [currentPath, setCurrentPath] = useState(initialPath); // null = root/main view
     const [contextMenu, setContextMenu] = useState(null);
+    const [itemContextMenu, setItemContextMenu] = useState(null); // For right-clicking on specific items
 
     const sidebarItems = [
         {
@@ -43,6 +45,26 @@ const ProjectsApp = ({
         e.preventDefault();
         e.stopPropagation();
         setContextMenu({ x: e.clientX + 3, y: e.clientY + 3 });
+        setItemContextMenu(null); // Close item context menu if open
+    };
+
+    const handleItemContextMenu = (e, item, itemType) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setItemContextMenu({
+            x: e.clientX + 3,
+            y: e.clientY + 3,
+            item,
+            itemType
+        });
+        setContextMenu(null); // Close background context menu if open
+    };
+
+    const handleDeleteItem = () => {
+        if (onDeleteItem && itemContextMenu) {
+            onDeleteItem(currentPath, itemContextMenu.item, itemContextMenu.itemType);
+        }
+        setItemContextMenu(null);
     };
 
     const handleCreateNewFolder = () => {
@@ -83,7 +105,10 @@ const ProjectsApp = ({
             <div
                 className="h-full w-full bg-gray-50 p-6 overflow-auto relative"
                 onContextMenu={handleContextMenu}
-                onClick={() => setContextMenu(null)}
+                onClick={() => {
+                    setContextMenu(null);
+                    setItemContextMenu(null);
+                }}
             >
                 {/* Context Menu */}
                 {contextMenu && ReactDOM.createPortal(
@@ -103,6 +128,23 @@ const ProjectsApp = ({
                             className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-100 flex items-center gap-2"
                         >
                             <FileText size={16} /> New File
+                        </button>
+                    </div>,
+                    document.body
+                )}
+
+                {/* Item Context Menu (for specific files/folders) */}
+                {itemContextMenu && ReactDOM.createPortal(
+                    <div
+                        className="fixed bg-white border border-gray-200 rounded-lg shadow-xl py-2 z-[9999]"
+                        style={{ left: `${itemContextMenu.x}px`, top: `${itemContextMenu.y}px` }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <button
+                            onClick={handleDeleteItem}
+                            className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center gap-2"
+                        >
+                            <Trash2 size={16} /> Delete
                         </button>
                     </div>,
                     document.body
@@ -134,6 +176,7 @@ const ProjectsApp = ({
                                 const nestedPath = currentPath ? `${currentPath}/${subFolder.name}` : subFolder.name;
                                 handleFolderClick(nestedPath);
                             }}
+                            onContextMenu={(e) => handleItemContextMenu(e, subFolder, 'folder')}
                         >
                             <Folder size={48} className="text-blue-500" />
                             <span className="text-sm text-gray-700 text-center">{subFolder.name}</span>
@@ -147,9 +190,10 @@ const ProjectsApp = ({
                             className="flex flex-col items-center gap-2 p-4 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
                             onDoubleClick={() => {
                                 if (onOpenFile) {
-                                    onOpenFile(file);
+                                    onOpenFile(file, currentPath);
                                 }
                             }}
+                            onContextMenu={(e) => handleItemContextMenu(e, file, 'file')}
                         >
                             <FileText size={48} className="text-green-500" />
                             <span className="text-sm text-gray-700 text-center">{file.name}</span>

@@ -53,7 +53,7 @@ const Desktop = () => {
 
     const apps = [
         { id: 'finder', title: 'Finder', icon: '/1.png', color: 'bg-transparent', content: ProjectsApp },
-        { id: 'safari', title: 'Safari', icon: '/safari-icon.png', color: 'bg-transparent', content: SafariApp },
+        { id: 'safari', title: 'Browser', icon: '/safari-icon.png', color: 'bg-transparent', content: SafariApp },
         { id: 'photos', title: 'Photos', icon: '/3.png', color: 'bg-white text-pink-500', content: PhotosApp },
         { id: 'contacts', title: 'Contacts', icon: '/4.png', color: 'bg-gray-500', content: AboutMeApp },
         { id: 'terminal', title: 'Terminal', icon: Terminal, color: 'bg-gray-900', content: TerminalApp },
@@ -140,6 +140,31 @@ const Desktop = () => {
                             setWindows([...windows, newFileWindow]);
                             setActiveWindowId(windowId);
                         }}
+                        onDeleteItem={(path, item, itemType) => {
+                            setFolderData((prev) => {
+                                const targetPath = path || folderName;
+                                const folder = prev[targetPath];
+                                if (!folder) return prev;
+
+                                if (itemType === 'folder') {
+                                    return {
+                                        ...prev,
+                                        [targetPath]: {
+                                            ...folder,
+                                            folders: folder.folders.filter(f => f.id !== item.id)
+                                        }
+                                    };
+                                } else {
+                                    return {
+                                        ...prev,
+                                        [targetPath]: {
+                                            ...folder,
+                                            files: folder.files.filter(f => f.id !== item.id)
+                                        }
+                                    };
+                                }
+                            });
+                        }}
                     />
                 );
                 return { ...window, content };
@@ -197,6 +222,32 @@ const Desktop = () => {
                         };
                         setWindows([...windows, newFileWindow]);
                         setActiveWindowId(windowId);
+                    }}
+                    onDeleteItem={(path, item, itemType) => {
+                        // Delete item from folderData
+                        setFolderData((prev) => {
+                            const targetPath = path || folderName;
+                            const folder = prev[targetPath];
+                            if (!folder) return prev;
+
+                            if (itemType === 'folder') {
+                                return {
+                                    ...prev,
+                                    [targetPath]: {
+                                        ...folder,
+                                        folders: folder.folders.filter(f => f.id !== item.id)
+                                    }
+                                };
+                            } else {
+                                return {
+                                    ...prev,
+                                    [targetPath]: {
+                                        ...folder,
+                                        files: folder.files.filter(f => f.id !== item.id)
+                                    }
+                                };
+                            }
+                        });
                     }}
                 />
             );
@@ -289,6 +340,31 @@ const Desktop = () => {
                         };
                         setWindows([...windows, newFileWindow]);
                         setActiveWindowId(windowId);
+                    }}
+                    onDeleteItem={(path, item, itemType) => {
+                        // Delete item from folderData
+                        setFolderData((prev) => {
+                            const folder = prev[path];
+                            if (!folder) return prev;
+
+                            if (itemType === 'folder') {
+                                return {
+                                    ...prev,
+                                    [path]: {
+                                        ...folder,
+                                        folders: folder.folders.filter(f => f.id !== item.id)
+                                    }
+                                };
+                            } else {
+                                return {
+                                    ...prev,
+                                    [path]: {
+                                        ...folder,
+                                        files: folder.files.filter(f => f.id !== item.id)
+                                    }
+                                };
+                            }
+                        });
                     }}
                 />
             );
@@ -390,9 +466,24 @@ const Desktop = () => {
         });
     };
 
-    const handleContextMenu = (e) => {
+    const handleDeleteItem = (id) => {
+        setDesktopItems(prev => prev.filter(item => item.id !== id));
+        setContextMenu(null);
+    };
+
+    const handleContextMenu = (e, item = null) => {
         e.preventDefault();
-        setContextMenu({ x: e.clientX, y: e.clientY });
+        e.stopPropagation();
+
+        // Only allow deletion for user-created items (in desktopItems), not pre-existing icons (in desktopIcons)
+        const isUserCreated = item && desktopItems.some(i => i.id === item.id);
+
+        setContextMenu({
+            x: e.clientX,
+            y: e.clientY,
+            itemId: item ? item.id : null,
+            onDelete: isUserCreated ? () => handleDeleteItem(item.id) : null
+        });
     };
 
     return (
@@ -436,64 +527,85 @@ const Desktop = () => {
                     </div>
                 </div >
 
-                <TopBar />
+                <TopBar
+                    onOpenWindow={openWindow}
+                    desktopItems={[...desktopIcons, ...desktopItems]}
+                    windows={windows}
+                    apps={apps}
+                />
 
                 {/* Desktop Icons - Draggable */}
                 {
-                    [...desktopIcons, ...desktopItems].map((icon, index) => (
-                        <Rnd
-                            key={icon.id}
-                            default={{
-                                x: window.innerWidth - 120,
-                                y: 50 + index * 150, // Increased vertical spacing to prevent overlap
-                                width: 100,
-                                height: 100,
-                            }}
-                            enableResizing={false}
-                            bounds="parent"
-                            className="z-0"
-                        >
-                            <div
-                                className="flex flex-col items-center gap-1 group cursor-move w-24"
-                                onDoubleClick={() => {
-                                    if (icon.type === 'folder') {
-                                        openWindow('finder', icon.name || icon.title);
-                                    } else if (icon.type === 'app') {
-                                        openWindow(icon.id);
-                                    } else if (icon.type === 'file') {
-                                        // Open file in TextEditorApp for editing
-                                        const windowId = `file-${icon.id}`;
-                                        const existingWindow = windows.find((w) => w.id === windowId);
-                                        if (existingWindow) {
-                                            if (existingWindow.minimized) {
-                                                setWindows(windows.map((w) => (w.id === windowId ? { ...w, minimized: false } : w)));
-                                            }
-                                            setActiveWindowId(windowId);
-                                            focusWindow(windowId);
-                                            return;
-                                        }
-                                        const content = () => <TextEditorApp fileName={icon.name} initialContent={icon.content || ''} onSave={(content) => {
-                                            setDesktopItems(prev => prev.map(item => item.id === icon.id ? { ...item, content } : item));
-                                        }} />;
-                                        const newWindow = { id: windowId, title: icon.name, content, zIndex: windows.length + 1, minimized: false };
-                                        setWindows([...windows, newWindow]);
-                                        setActiveWindowId(windowId);
-                                    }
+                    // Render static desktop icons first, then user-created items
+                    [...desktopIcons, ...desktopItems].map((icon, index) => {
+                        const ITEM_HEIGHT = 130;
+                        const START_Y = 50;
+                        const itemsPerColumn = Math.max(1, Math.floor((window.innerHeight - START_Y - 50) / ITEM_HEIGHT));
+                        const colIndex = Math.floor(index / itemsPerColumn);
+                        const rowIndex = index % itemsPerColumn;
+
+                        return (
+                            <Rnd
+                                key={icon.id}
+                                default={{
+                                    x: window.innerWidth - 120 - (colIndex * 120),
+                                    y: START_Y + (rowIndex * ITEM_HEIGHT),
+                                    width: 100,
+                                    height: 100,
                                 }}
+                                enableResizing={false}
+                                bounds="parent"
+                                className="z-0"
                             >
-                                <div className="w-16 h-16 bg-blue-400/20 rounded-xl flex items-center justify-center backdrop-blur-sm border border-blue-300/30 shadow-lg transition-all group-hover:bg-blue-400/30 group-hover:border-blue-300/50">
-                                    {typeof icon.icon === 'string' ? (
-                                        <img src={icon.icon} alt={icon.title || icon.name} className="w-10 h-10 object-contain" />
-                                    ) : (
-                                        <icon.icon size={40} className="text-blue-200 fill-blue-400/30" strokeWidth={1.5} />
-                                    )}
+                                <div
+                                    className="flex flex-col items-center gap-1 group cursor-move w-24"
+                                    onContextMenu={(e) => handleContextMenu(e, icon)}
+                                    onDoubleClick={() => {
+                                        if (icon.type === 'folder') {
+                                            openWindow('finder', icon.name || icon.title);
+                                        } else if (icon.type === 'app') {
+                                            openWindow(icon.id);
+                                        } else if (icon.type === 'file') {
+                                            // Open file in TextEditorApp for editing
+                                            const windowId = `file-${icon.id}`;
+                                            const existingWindow = windows.find((w) => w.id === windowId);
+                                            if (existingWindow) {
+                                                if (existingWindow.minimized) {
+                                                    setWindows(windows.map((w) => (w.id === windowId ? { ...w, minimized: false } : w)));
+                                                }
+                                                setActiveWindowId(windowId);
+                                                focusWindow(windowId);
+                                                return;
+                                            }
+                                            const content = () => <TextEditorApp fileName={icon.name} initialContent={icon.content || ''} onSave={(content) => {
+                                                setDesktopItems(prev => prev.map(item => item.id === icon.id ? { ...item, content } : item));
+                                            }} />;
+                                            const newWindow = { id: windowId, title: icon.name, content, zIndex: windows.length + 1, minimized: false };
+                                            setWindows([...windows, newWindow]);
+                                            setActiveWindowId(windowId);
+                                        }
+                                    }}
+                                >
+                                    <div className="w-16 h-16 bg-blue-400/20 rounded-xl flex items-center justify-center backdrop-blur-sm border border-blue-300/30 shadow-lg transition-all group-hover:bg-blue-400/30 group-hover:border-blue-300/50">
+                                        {typeof icon.icon === 'string' ? (
+                                            <img
+                                                src={icon.icon}
+                                                alt={icon.title || icon.name}
+                                                className="w-10 h-10 object-contain pointer-events-none"
+                                                draggable={false}
+                                                onDragStart={(e) => e.preventDefault()}
+                                            />
+                                        ) : (
+                                            <icon.icon size={40} className="text-blue-200 fill-blue-400/30" strokeWidth={1.5} />
+                                        )}
+                                    </div>
+                                    <span className="text-white text-xs font-medium text-center drop-shadow-md px-1 rounded bg-black/0 group-hover:bg-blue-600/80 transition-colors leading-tight whitespace-pre-line">
+                                        {icon.title || icon.name}
+                                    </span>
                                 </div>
-                                <span className="text-white text-xs font-medium text-center drop-shadow-md px-1 rounded bg-black/0 group-hover:bg-blue-600/80 transition-colors leading-tight whitespace-pre-line">
-                                    {icon.title || icon.name}
-                                </span>
-                            </div>
-                        </Rnd>
-                    ))
+                            </Rnd>
+                        );
+                    })
                 }
 
                 <div className="relative z-10 w-full h-full pointer-events-none">
@@ -526,6 +638,7 @@ const Desktop = () => {
                             onClose={() => setContextMenu(null)}
                             onNewFolder={createNewFolder}
                             onNewFile={createNewFile}
+                            onDelete={contextMenu.onDelete}
                         />
                     )
                 }
