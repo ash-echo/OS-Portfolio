@@ -486,20 +486,42 @@ const Desktop = () => {
         });
     };
 
+
     return (
-        <div className="w-full h-screen overflow-hidden relative select-none font-sans bg-black" >
+        <div className="w-full h-screen overflow-hidden relative select-none font-sans bg-black">
             <CustomCursor />
 
             {/* Boot Screen */}
-            <div className={`boot-screen absolute inset-0 bg-black z-[9999] flex flex-col items-center justify-center ${!bootSequence ? 'hidden' : ''}`} >
-                <div className="boot-progress mb-4">
-                    <div className="boot-bar"></div>
+            <div className={`boot-screen absolute inset-0 bg-gradient-to-b from-gray-900 via-black to-black z-[9999] flex flex-col items-center justify-center ${!bootSequence ? 'hidden' : ''}`}>
+                {/* Logo */}
+                <img
+                    src="/logo.png"
+                    alt="logo"
+                    className="boot-logo w-48 h-48 mb-20 drop-shadow-[0_0_40px_rgba(59,130,246,0.6)]"
+                />
+
+                {/* Loading Text */}
+                <div className="text-white text-3xl font-light mb-10 tracking-widest">
+                    Loading...
                 </div>
-                <img src="/logo.png" alt="logo" className="boot-logo w-24 h-24" />
-            </div >
+
+                {/* Progress Bar Container */}
+                <div className="w-96 h-3 bg-gray-800 rounded-full overflow-hidden relative shadow-lg">
+                    {/* Progress Bar */}
+                    <div className="boot-bar h-full bg-gradient-to-r from-blue-500 via-blue-400 to-blue-500 rounded-full relative">
+                        {/* Glow Effect */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
+                    </div>
+                </div>
+
+                {/* Copyright Text */}
+                <div className="absolute bottom-8 text-gray-500 text-sm">
+                    © 2025 Ashwath's Portfolio
+                </div>
+            </div>
 
             {/* Desktop Content */}
-            < div
+            <div
                 ref={desktopRef}
                 className="desktop-content w-full h-full relative bg-cover bg-center"
                 style={{ backgroundImage: "url('/wall.png')" }}
