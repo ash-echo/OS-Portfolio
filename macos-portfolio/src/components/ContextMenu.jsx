@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { RefreshCw, FolderPlus, FileText, Image, SortAsc, Grid3x3, List, Trash2, Download } from 'lucide-react';
 
 const ContextMenu = ({ x, y, onClose, onNewFolder, onNewFile, onDelete, onRefresh, onDownload }) => {
+    console.log('ContextMenu props:', { x, y, onDelete: !!onDelete, onDownload: !!onDownload });
     const menuRef = useRef(null);
     const [position, setPosition] = useState({ x, y });
 

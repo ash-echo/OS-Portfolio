@@ -116,7 +116,7 @@ const Desktop = () => {
             console.error('Error loading folder data from localStorage:', error);
             return initialFolderData;
         }
-    });    const apps = [
+    }); const apps = [
         { id: 'finder', title: 'Finder', icon: '/1.png', color: 'bg-transparent', content: 'finder' }, // Special handling in openWindow
         { id: 'safari', title: 'Browser', icon: '/safari-icon.png', color: 'bg-transparent', content: (props) => <SafariApp {...props} /> },
         { id: 'photos', title: 'Photos', icon: '/3.png', color: 'bg-white text-pink-500', content: PhotosApp },
@@ -345,7 +345,7 @@ const Desktop = () => {
         // Handle the case where second parameter is a boolean (from terminal)
         const folderName = typeof folderNameOrTerminalFlag === 'string' ? folderNameOrTerminalFlag : null;
         openedFromTerminal = typeof folderNameOrTerminalFlag === 'boolean' ? folderNameOrTerminalFlag : openedFromTerminal;
-        
+
         const app = allApps.find((a) => a.id === appId);
         if (!app) return;
 
@@ -441,7 +441,7 @@ const Desktop = () => {
         // Normal app windows
         // If opened from terminal, create a new window with timestamp to make it unique
         const windowId = openedFromTerminal ? `${appId}-${Date.now()}` : appId;
-        
+
         // Only check for existing window if NOT opened from terminal
         if (!openedFromTerminal) {
             const existingWindow = windows.find((w) => w.id === appId);
@@ -457,7 +457,7 @@ const Desktop = () => {
 
         // Prepare content based on app type
         let finalContent;
-        
+
         if (appId === 'finder' || app.content === 'finder') {
             // For Finder, always wrap with props
             const allFolders = [...desktopIcons.filter(i => i.type === 'folder'), ...desktopItems.filter(i => i.type === 'folder')];
@@ -560,7 +560,7 @@ const Desktop = () => {
             minimized: false,
         };
         setWindows([...windows, newWindow]);
-        
+
         // If opened from terminal, keep terminal active. Otherwise focus the new window
         if (!openedFromTerminal) {
             setActiveWindowId(windowId);
@@ -671,15 +671,12 @@ const Desktop = () => {
         });
     };
 
-    const handleDeleteItem = (id) => {
-        setDesktopItems(prev => prev.filter(item => item.id !== id));
-        setContextMenu(null);
-    };
+
 
     const handleDownloadResumePDF = async () => {
         try {
             setContextMenu(null);
-            
+
             const pdf = new jsPDF({
                 orientation: 'portrait',
                 unit: 'mm',
@@ -748,7 +745,7 @@ const Desktop = () => {
             pdf.setTextColor(55, 65, 81);
             pdf.text('React, Next.js, JavaScript, TypeScript, Tailwind CSS, HTML5, CSS3', leftMargin + 22, yPos);
             yPos += 5;
-            
+
             pdf.setFont('helvetica', 'bold');
             pdf.setTextColor(0, 0, 0);
             pdf.text('Backend:', leftMargin, yPos);
@@ -756,7 +753,7 @@ const Desktop = () => {
             pdf.setTextColor(55, 65, 81);
             pdf.text('Node.js, Express, Python, MongoDB, PostgreSQL, REST APIs, GraphQL', leftMargin + 22, yPos);
             yPos += 5;
-            
+
             pdf.setFont('helvetica', 'bold');
             pdf.setTextColor(0, 0, 0);
             pdf.text('Tools & DevOps:', leftMargin, yPos);
@@ -764,7 +761,7 @@ const Desktop = () => {
             pdf.setTextColor(55, 65, 81);
             pdf.text('Git, Docker, AWS, Vercel, CI/CD, Jest, Webpack', leftMargin + 32, yPos);
             yPos += 5;
-            
+
             pdf.setFont('helvetica', 'bold');
             pdf.setTextColor(0, 0, 0);
             pdf.text('Other:', leftMargin, yPos);
@@ -776,7 +773,7 @@ const Desktop = () => {
             // Work Experience
             addText('WORK EXPERIENCE', 14, true, [37, 99, 235]);
             addSpace(2);
-            
+
             // Job 1
             addText('Senior Full Stack Developer', 12, true, [0, 0, 0]);
             pdf.setFontSize(10);
@@ -855,7 +852,7 @@ const Desktop = () => {
             pdf.text('• React Advanced Certification', leftMargin, yPos);
 
             pdf.save('Ashwath_Resume.pdf');
-            
+
         } catch (error) {
             console.error('PDF generation error:', error);
             alert('Failed to generate PDF. Please try again.');
@@ -1141,32 +1138,48 @@ const Desktop = () => {
         }, 300);
     };
 
+    const handleDeleteItem = (id) => {
+        const item = desktopItems.find(i => i.id === id);
+        if (item && item.type === 'folder') {
+            setFolderData(prev => {
+                const newData = { ...prev };
+                delete newData[item.name];
+                return newData;
+            });
+        }
+        setDesktopItems(prev => prev.filter(item => item.id !== id));
+        setContextMenu(null);
+    };
+
     const handleContextMenu = (e, item = null) => {
         e.preventDefault(); // Prevent browser's default context menu
+        e.stopPropagation(); // Prevent event from bubbling to parent elements
         const rect = desktopRef.current.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
-        setContextMenu({
+        console.log('Right clicked item:', item);
+        console.log('Desktop items:', desktopItems);
+
+        // Check if the item exists in desktopItems (user-created)
+        // We check by ID to be safe
+        const isUserCreated = item && desktopItems.some(i => i.id === item.id);
+        console.log('Is user created:', isUserCreated);
+
+        // Also allow deleting if it's explicitly a folder or file type that isn't a system app
+        // This acts as a fallback if the ID check fails for some reason but it's clearly a user type
+        const isDeletable = isUserCreated || (item && (item.type === 'folder' || item.type === 'file') && !['nike', 'ai', 'food'].includes(item.id));
+        console.log('Is deletable:', isDeletable);
+
+        const menuState = {
             x: e.clientX,
             y: e.clientY,
-            onDelete: item ? () => {
-                if (item.type === 'folder' || item.type === 'file') {
-                    setDesktopItems(prev => prev.filter(i => i.id !== item.id));
-                }
-                setContextMenu(null);
-            } : null,
-            onDownload: item && item.type === 'resume-file' ? () => {
-                // Handle resume download
-                const link = document.createElement('a');
-                link.href = '/resume.pdf'; // Assuming resume PDF exists
-                link.download = 'Ashwath_Resume.pdf';
-                link.click();
-                setContextMenu(null);
-            } : null
-        });
+            onDelete: isDeletable ? () => handleDeleteItem(item.id) : null,
+            onDownload: item && item.type === 'resume-file' ? handleDownloadResumePDF : null
+        };
+        console.log('Setting context menu:', menuState);
+        setContextMenu(menuState);
     };
-
 
     return (
         <div className="w-full h-screen overflow-hidden relative select-none font-sans bg-black">
