@@ -21,6 +21,8 @@ import TextEditorApp from '../apps/TextEditorApp';
 import DocumentViewerApp from '../apps/DocumentViewerApp';
 import ResumeApp from '../apps/ResumeApp';
 import WorkApp from '../apps/WorkApp';
+import OSPortfolioApp from '../apps/OSPortfolioApp';
+import EvalGeniusApp from '../apps/EvalGeniusApp';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, UnderlineType } from 'docx';
 import { saveAs } from 'file-saver';
 
@@ -49,7 +51,7 @@ const Desktop = () => {
     // Dynamic desktop items (created by user)
     const [desktopItems, setDesktopItems] = useState(() => {
         try {
-            const saved = localStorage.getItem('desktopItems');
+            const saved = localStorage.getItem('desktopItems_v5');
             return saved ? JSON.parse(saved).map(item => ({
                 ...item,
                 icon: (typeof item.icon === 'string' ? item.icon : null) || (item.type === 'folder' ? 'folder' : 'file')
@@ -63,7 +65,7 @@ const Desktop = () => {
     // Store custom icon positions
     const [iconPositions, setIconPositions] = useState(() => {
         try {
-            const saved = localStorage.getItem('iconPositions');
+            const saved = localStorage.getItem('iconPositions_v5');
             return saved ? JSON.parse(saved) : {};
         } catch (error) {
             console.error('Error loading icon positions from localStorage:', error);
@@ -85,21 +87,14 @@ const Desktop = () => {
     });
 
     const initialFolderData = {
-        'Nike Ecommerce\nWebsite Application': {
+        'Tutorial': {
             files: [
-                { id: 'nike-readme', name: 'README.md', content: 'Nike Ecommerce Website Application\n\nA full-stack e-commerce platform built with React and Node.js.\n\nFeatures:\n- Product catalog with filtering\n- Shopping cart functionality\n- Secure checkout process\n- User authentication\n- Order tracking\n\nTech Stack: React, Node.js, Express, MongoDB', type: 'file' }
-            ],
-            folders: []
-        },
-        'AI Resume Analyzer': {
-            files: [
-                { id: 'ai-readme', name: 'README.md', content: 'AI Resume Analyzer\n\nAn intelligent resume analysis tool powered by machine learning.\n\nFeatures:\n- Resume parsing and analysis\n- Skill matching\n- Job recommendation\n- ATS optimization\n- Score generation\n\nTech Stack: Python, TensorFlow, Flask, React', type: 'file' }
-            ],
-            folders: []
-        },
-        'Food Delivery App': {
-            files: [
-                { id: 'food-readme', name: 'README.md', content: 'Food Delivery App\n\nA comprehensive food delivery platform connecting restaurants and customers.\n\nFeatures:\n- Restaurant browsing\n- Real-time order tracking\n- Multiple payment options\n- Rating and reviews\n- Delivery scheduling\n\nTech Stack: React Native, Node.js, MongoDB, Socket.io', type: 'file' }
+                {
+                    id: 'tutorial-readme',
+                    name: 'README.md',
+                    content: '# Welcome to MacOS Portfolio\n\nThis interactive portfolio mimics the MacOS desktop environment, running entirely in your browser.\n\n## Features & Capabilities\n\n*   **Desktop Environment**: A full desktop experience with a top bar, dock, and wallpaper.\n*   **Window Management**: Open, close, minimize, maximize, and drag windows just like a real OS.\n*   **File System**: Create folders, text files, and organize your content.\n*   **Apps**:\n    *   **Finder**: Browse your files and projects.\n    *   **Terminal**: Use commands like `ls`, `cd`, `cat`, and `help`.\n    *   **Safari**: Browse the web (simulated).\n    *   **Trash**: Delete and restore files.\n    *   **Text Editor**: Write and save notes.\n    *   **Games**: Play Pokemon Fire Red and Sonic 2.\n\n## How to Use\n\n1.  **Navigation**: Click icons on the desktop or dock to open apps.\n2.  **Window Control**: Drag windows by their title bar. Use the traffic light buttons (top left) to close, minimize, or maximize.\n3.  **Context Menu**: Right-click on the desktop to create new folders or files.\n4.  **Terminal**: Open the Terminal app and type `help` to see available commands.\n5.  **Resume**: Click the PDF icon on the desktop to download my resume.\n\nEnjoy exploring!',
+                    type: 'file'
+                }
             ],
             folders: []
         }
@@ -108,13 +103,15 @@ const Desktop = () => {
     // Folder content (nested files and folders)
     const [folderData, setFolderData] = useState(() => {
         try {
-            const saved = localStorage.getItem('folderData');
+            const saved = localStorage.getItem('folderData_v5');
             return saved ? JSON.parse(saved) : initialFolderData;
         } catch (error) {
             console.error('Error loading folder data from localStorage:', error);
             return initialFolderData;
         }
-    }); const apps = [
+    });
+
+    const apps = [
         { id: 'finder', title: 'Finder', icon: '/1.png', color: 'bg-transparent', content: 'finder' }, // Special handling in openWindow
         { id: 'safari', title: 'Browser', icon: '/safari-icon.png', color: 'bg-transparent', content: (props) => <SafariApp {...props} /> },
         { id: 'photos', title: 'Photos', icon: '/3.png', color: 'bg-white text-pink-500', content: PhotosApp },
@@ -129,22 +126,24 @@ const Desktop = () => {
     const hiddenApps = [
         { id: 'resume', title: 'Resume', icon: FileText, color: 'bg-blue-500', content: ResumeApp },
         { id: 'work', title: 'Projects', icon: Briefcase, color: 'bg-purple-600', content: WorkApp },
+        { id: 'os-portfolio', title: 'OS Portfolio', icon: '/portfolio.png', color: 'bg-gray-900', content: OSPortfolioApp },
+        { id: 'eval-genius', title: 'EvalGenius', icon: '/eval.png', color: 'bg-indigo-600', content: EvalGeniusApp },
     ];
 
     const resetSession = () => {
         setDesktopItems([]);
         setFolderData(initialFolderData);
         setIconPositions({});
-        localStorage.removeItem('desktopItems');
-        localStorage.removeItem('folderData');
-        localStorage.removeItem('iconPositions');
+        localStorage.removeItem('desktopItems_v5');
+        localStorage.removeItem('folderData_v5');
+        localStorage.removeItem('iconPositions_v5');
     };
 
     const desktopIcons = [
         { id: 'resume-file', title: 'Ashwath_Resume.pdf', icon: 'file', type: 'resume-file' },
-        { id: 'nike', title: 'Nike Ecommerce\nWebsite Application', icon: 'folder', type: 'folder' },
-        { id: 'ai', title: 'AI Resume Analyzer', icon: 'folder', type: 'folder' },
-        { id: 'food', title: 'Food Delivery App', icon: 'folder', type: 'folder' },
+        { id: 'nike', title: 'EvalGenius - AI Evaluator', icon: 'folder', type: 'app' },
+        { id: 'os-portfolio', title: 'OS Inspired Portfolio', icon: 'folder', type: 'app' },
+        { id: 'tutorial', title: 'Tutorial', icon: 'folder', type: 'folder' },
         { id: 'pokemon', title: 'Pokemon Fire Red', icon: '/poke.png', type: 'app' },
         { id: 'sonic2', title: 'Sonic 2', icon: '/sonic.png', type: 'app' },
     ];
@@ -180,7 +179,7 @@ const Desktop = () => {
     // Save desktopItems to localStorage whenever it changes
     useEffect(() => {
         try {
-            localStorage.setItem('desktopItems', JSON.stringify(desktopItems));
+            localStorage.setItem('desktopItems_v5', JSON.stringify(desktopItems));
         } catch (error) {
             console.error('Error saving desktop items to localStorage:', error);
         }
@@ -189,7 +188,7 @@ const Desktop = () => {
     // Save folderData to localStorage whenever it changes
     useEffect(() => {
         try {
-            localStorage.setItem('folderData', JSON.stringify(folderData));
+            localStorage.setItem('folderData_v5', JSON.stringify(folderData));
         } catch (error) {
             console.error('Error saving folder data to localStorage:', error);
         }
@@ -198,7 +197,7 @@ const Desktop = () => {
     // Save iconPositions to localStorage whenever it changes
     useEffect(() => {
         try {
-            localStorage.setItem('iconPositions', JSON.stringify(iconPositions));
+            localStorage.setItem('iconPositions_v5', JSON.stringify(iconPositions));
         } catch (error) {
             console.error('Error saving icon positions to localStorage:', error);
         }
@@ -1120,7 +1119,13 @@ const Desktop = () => {
                                         if (icon.type === 'folder') {
                                             openWindow('finder', icon.name || icon.title);
                                         } else if (icon.type === 'app') {
-                                            openWindow(icon.id);
+                                            if (icon.id === 'nike') {
+                                                openWindow('eval-genius');
+                                            } else if (icon.id === 'os-portfolio') {
+                                                openWindow('os-portfolio');
+                                            } else {
+                                                openWindow(icon.id);
+                                            }
                                         } else if (icon.type === 'resume-file') {
                                             // Open resume app
                                             openWindow('resume');
