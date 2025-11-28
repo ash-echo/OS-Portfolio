@@ -7,6 +7,7 @@ const Window = ({ id, title, content: Content, onClose, onMinimize, isFocused, o
     const windowRef = useRef(null);
     const [isMaximized, setIsMaximized] = useState(false);
     const rndRef = useRef(null);
+    const overlayRef = useRef(null);
 
     useEffect(() => {
         // Open animation
@@ -34,6 +35,15 @@ const Window = ({ id, title, content: Content, onClose, onMinimize, isFocused, o
         setIsMaximized(!isMaximized);
     };
 
+    const handleDragStart = () => {
+        if (overlayRef.current) overlayRef.current.style.display = 'block';
+        onFocus();
+    };
+
+    const handleDragStop = () => {
+        if (overlayRef.current) overlayRef.current.style.display = 'none';
+    };
+
     return (
         <Rnd
             ref={rndRef}
@@ -46,8 +56,10 @@ const Window = ({ id, title, content: Content, onClose, onMinimize, isFocused, o
             minWidth={isMobile ? 280 : 300}
             minHeight={isMobile ? 200 : 200}
             bounds="window"
-            onDragStart={onFocus}
-            onResizeStart={onFocus}
+            onDragStart={handleDragStart}
+            onDragStop={handleDragStop}
+            onResizeStart={handleDragStart}
+            onResizeStop={handleDragStop}
             className={`absolute rounded-xl shadow-2xl overflow-hidden bg-white flex flex-col transition-shadow duration-300 border border-black/10 ${isFocused ? 'z-50 shadow-[0_20px_50px_rgba(0,0,0,0.3)]' : 'z-10 shadow-md'}`}
             dragHandleClassName="window-header"
             enableResizing={!isMaximized}
@@ -55,19 +67,37 @@ const Window = ({ id, title, content: Content, onClose, onMinimize, isFocused, o
         >
             <div
                 ref={windowRef}
-                className="h-full w-full flex flex-col"
+                className="h-full w-full flex flex-col relative"
                 onClick={onFocus}
             >
                 {/* Window Header */}
                 <div className={`window-header ${isMobile ? 'h-14' : 'h-10'} bg-[#e8e8e8] border-b border-[#d1d1d1] flex items-center ${isMobile ? 'px-6' : 'px-4'} justify-between select-none cursor-move rounded-t-xl`}>
                     <div className={`flex ${isMobile ? 'gap-4' : 'gap-2'} group`}>
-                        <button onClick={(e) => { e.stopPropagation(); onClose(id); }} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => { e.stopPropagation(); onClose(id); }} className={`${isMobile ? 'w-6 h-6' : 'w-3 h-3'} rounded-full bg-[#FF5F56] hover:bg-[#FF5F56]/80 active:bg-[#FF5F56]/60 flex items-center justify-center text-black/0 hover:text-black/50 transition-colors border border-black/10 touch-manipulation`}>
+                        <button
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onClick={(e) => { e.stopPropagation(); onClose(id); }}
+                            onTouchStart={(e) => e.stopPropagation()}
+                            onTouchEnd={(e) => { e.stopPropagation(); onClose(id); }}
+                            className={`${isMobile ? 'w-6 h-6' : 'w-3 h-3'} rounded-full bg-[#FF5F56] hover:bg-[#FF5F56]/80 active:bg-[#FF5F56]/60 flex items-center justify-center text-black/0 hover:text-black/50 transition-colors border border-black/10 touch-manipulation`}
+                        >
                             <X size={isMobile ? 12 : 8} />
                         </button>
-                        <button onClick={(e) => { e.stopPropagation(); onMinimize(id); }} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => { e.stopPropagation(); onMinimize(id); }} className={`${isMobile ? 'w-6 h-6' : 'w-3 h-3'} rounded-full bg-[#FFBD2E] hover:bg-[#FFBD2E]/80 active:bg-[#FFBD2E]/60 flex items-center justify-center text-black/0 hover:text-black/50 transition-colors border border-black/10 touch-manipulation`}>
+                        <button
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onClick={(e) => { e.stopPropagation(); onMinimize(id); }}
+                            onTouchStart={(e) => e.stopPropagation()}
+                            onTouchEnd={(e) => { e.stopPropagation(); onMinimize(id); }}
+                            className={`${isMobile ? 'w-6 h-6' : 'w-3 h-3'} rounded-full bg-[#FFBD2E] hover:bg-[#FFBD2E]/80 active:bg-[#FFBD2E]/60 flex items-center justify-center text-black/0 hover:text-black/50 transition-colors border border-black/10 touch-manipulation`}
+                        >
                             <Minus size={isMobile ? 12 : 8} />
                         </button>
-                        <button onClick={(e) => { e.stopPropagation(); handleMaximize(); }} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => { e.stopPropagation(); handleMaximize(); }} className={`${isMobile ? 'w-6 h-6' : 'w-3 h-3'} rounded-full bg-[#27C93F] hover:bg-[#27C93F]/80 active:bg-[#27C93F]/60 flex items-center justify-center text-black/0 hover:text-black/50 transition-colors border border-black/10 touch-manipulation`}>
+                        <button
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onClick={(e) => { e.stopPropagation(); handleMaximize(); }}
+                            onTouchStart={(e) => e.stopPropagation()}
+                            onTouchEnd={(e) => { e.stopPropagation(); handleMaximize(); }}
+                            className={`${isMobile ? 'w-6 h-6' : 'w-3 h-3'} rounded-full bg-[#27C93F] hover:bg-[#27C93F]/80 active:bg-[#27C93F]/60 flex items-center justify-center text-black/0 hover:text-black/50 transition-colors border border-black/10 touch-manipulation`}
+                        >
                             <Maximize2 size={isMobile ? 12 : 8} />
                         </button>
                     </div>
@@ -79,6 +109,8 @@ const Window = ({ id, title, content: Content, onClose, onMinimize, isFocused, o
 
                 {/* Window Content */}
                 <div className="flex-1 overflow-hidden bg-white relative">
+                    {/* Drag Overlay - Blocks iframe events during drag */}
+                    <div ref={overlayRef} className="absolute inset-0 z-50 bg-transparent hidden" />
                     {typeof Content === 'function' ? <Content /> : Content}
                 </div>
             </div>
