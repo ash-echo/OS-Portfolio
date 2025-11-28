@@ -114,20 +114,20 @@ const Desktop = () => {
     const apps = [
         { id: 'finder', title: 'Finder', icon: '/1.png', color: 'bg-transparent', content: 'finder' }, // Special handling in openWindow
         { id: 'safari', title: 'Browser', icon: '/safari-icon.png', color: 'bg-transparent', content: (props) => <SafariApp {...props} /> },
-        { id: 'photos', title: 'Photos', icon: '/3.png', color: 'bg-white text-pink-500', content: PhotosApp },
-        { id: 'contacts', title: 'About Me', icon: '/4.png', color: 'bg-gray-500', content: AboutMeApp },
+        { id: 'photos', title: 'Photos', icon: '/3.png', color: 'bg-white text-pink-500', content: () => <PhotosApp /> },
+        { id: 'contacts', title: 'About Me', icon: '/4.png', color: 'bg-gray-500', content: () => <AboutMeApp /> },
         { id: 'terminal', title: 'Terminal', icon: Terminal, color: 'bg-gray-900', content: (props) => <TerminalApp {...props} onOpenApp={openWindow} onResetSession={resetSession} /> },
-        { id: 'trash', title: 'Trash', icon: '/5.png', color: 'bg-gray-200 text-gray-600', content: TrashApp },
-        { id: 'pokemon', title: 'Pokemon Fire Red', icon: '/poke.png', color: 'bg-red-600', content: PokemonApp },
-        { id: 'sonic2', title: 'Sonic 2', icon: '/sonic.png', color: 'bg-blue-600', content: Sonic2App },
+        { id: 'trash', title: 'Trash', icon: '/5.png', color: 'bg-gray-200 text-gray-600', content: () => <TrashApp /> },
+        { id: 'pokemon', title: 'Pokemon Fire Red', icon: '/poke.png', color: 'bg-red-600', content: () => <PokemonApp /> },
+        { id: 'sonic2', title: 'Sonic 2', icon: '/sonic.png', color: 'bg-blue-600', content: () => <Sonic2App /> },
     ];
 
     // Apps that can be opened but not shown in dock
     const hiddenApps = [
-        { id: 'resume', title: 'Resume', icon: FileText, color: 'bg-blue-500', content: ResumeApp },
-        { id: 'work', title: 'Projects', icon: Briefcase, color: 'bg-purple-600', content: WorkApp },
-        { id: 'os-portfolio', title: 'OS Portfolio', icon: '/portfolio.png', color: 'bg-gray-900', content: OSPortfolioApp },
-        { id: 'eval-genius', title: 'EvalGenius', icon: '/eval.png', color: 'bg-indigo-600', content: EvalGeniusApp },
+        { id: 'resume', title: 'Resume', icon: FileText, color: 'bg-blue-500', content: () => <ResumeApp /> },
+        { id: 'work', title: 'Projects', icon: Briefcase, color: 'bg-purple-600', content: () => <WorkApp /> },
+        { id: 'os-portfolio', title: 'OS Portfolio', icon: '/portfolio.png', color: 'bg-gray-900', content: () => <OSPortfolioApp /> },
+        { id: 'eval-genius', title: 'EvalGenius', icon: '/eval.png', color: 'bg-indigo-600', content: () => <EvalGeniusApp /> },
     ];
 
     const resetSession = () => {

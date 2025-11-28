@@ -1,78 +1,158 @@
-import React from 'react';
-import { Sidebar, Heart, Image as ImageIcon, Users, MapPin, Clock, Download } from 'lucide-react';
+import React, { useState, memo } from 'react';
+import { Image as ImageIcon, X, Maximize2, PlayCircle } from 'lucide-react';
 
-const PhotosApp = () => {
-    const photos = [
-        { id: 1, url: 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=500&q=60', date: 'Today' },
-        { id: 2, url: 'https://images.unsplash.com/photo-1516802273409-68526ee1bdd6?auto=format&fit=crop&w=500&q=60', date: 'Today' },
-        { id: 3, url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=500&q=60', date: 'Yesterday' },
-        { id: 4, url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=500&q=60', date: 'Yesterday' },
-        { id: 5, url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=500&q=60', date: 'Mon, Aug 12' },
-        { id: 6, url: 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?auto=format&fit=crop&w=500&q=60', date: 'Mon, Aug 12' },
-        { id: 7, url: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=500&q=60', date: 'Sun, Aug 11' },
-        { id: 8, url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=500&q=60', date: 'Sun, Aug 11' },
-    ];
+// Move data outside component to prevent recreation
+const PHOTOS = [
+    // Project 1: OS Portfolio
+    { id: 'p1-1', url: '/proj1/desktop.png', title: 'OS Desktop', type: 'image' },
+    { id: 'p1-2', url: '/proj1/portfolio.png', title: 'Portfolio Showcase', type: 'image' },
+    { id: 'p1-3', url: '/proj1/games and apps.png', title: 'Games & Apps', type: 'image' },
+    { id: 'p1-4', url: '/proj1/gif3.gif', title: 'Window Management', type: 'gif' },
+    { id: 'p1-5', url: '/proj1/gif4.gif', title: 'Interactive Demo', type: 'gif' },
+
+    // Project 2: EvalGenius
+    { id: 'p2-1', url: '/proj2/hero.png', title: 'EvalGenius Hero', type: 'image' },
+    { id: 'p2-2', url: '/proj2/upload-ui.png', title: 'Upload Interface', type: 'image' },
+    { id: 'p2-3', url: '/proj2/workflow.png', title: 'Agentic Workflow', type: 'image' },
+    { id: 'p2-4', url: '/proj2/analyze.png', title: 'Vision Analysis', type: 'image' },
+    { id: 'p2-5', url: '/proj2/architecture.png', title: 'System Architecture', type: 'image' },
+    { id: 'p2-6', url: '/proj2/gif1.gif', title: 'Grading Demo', type: 'gif' },
+    { id: 'p2-7', url: '/proj2/gif2.gif', title: 'Results Demo', type: 'gif' },
+];
+
+// Memoized Photo Item Component
+const PhotoItem = memo(({ photo, onContextMenu, onClick, isPlaying, onPlay }) => {
+    const [isLoaded, setIsLoaded] = useState(false);
+
+    const handleItemClick = () => {
+        if (photo.type === 'gif') {
+            if (!isPlaying) {
+                onPlay(photo.id);
+            } else {
+                onClick(photo);
+            }
+        } else {
+            onClick(photo);
+        }
+    };
 
     return (
-        <div className="w-full h-full flex bg-white">
-            {/* Sidebar */}
-            <div className="w-48 bg-[#f3f3f3]/80 backdrop-blur-xl border-r border-[#d1d1d1] flex flex-col pt-4 pb-4">
+        <div
+            className="aspect-square bg-gray-100 rounded-lg overflow-hidden cursor-pointer group relative shadow-sm hover:shadow-md transition-all border border-gray-200"
+            onContextMenu={(e) => onContextMenu(e, photo)}
+            onClick={handleItemClick}
+        >
+            {photo.type === 'gif' && !isPlaying ? (
+                // GIF Placeholder
+                <div className="w-full h-full flex flex-col items-center justify-center bg-gray-200 text-gray-500 p-2 text-center">
+                    <PlayCircle size={32} className="mb-2 text-blue-500" />
+                    <span className="text-xs font-medium">{photo.title}</span>
+                    <span className="text-[10px] mt-1 bg-gray-300 px-1.5 py-0.5 rounded text-gray-600">GIF</span>
+                </div>
+            ) : (
+                // Image or Playing GIF
+                <>
+                    <img
+                        src={photo.url}
+                        alt={photo.title}
+                        loading="lazy"
+                        onLoad={() => setIsLoaded(true)}
+                        className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                    />
+                    {!isLoaded && (
+                        <div className="absolute inset-0 bg-gray-100 animate-pulse" />
+                    )}
+                </>
+            )}
+
+            {/* Hover Overlay */}
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
+                <Maximize2 className="text-white drop-shadow-md" size={24} />
+            </div>
+
+            {/* Type Badge */}
+            {photo.type === 'gif' && (
+                <div className="absolute top-2 right-2 px-1.5 py-0.5 bg-black/50 text-white text-[10px] font-bold rounded backdrop-blur-sm">
+                    {isPlaying ? 'PLAYING' : 'GIF'}
+                </div>
+            )}
+        </div>
+    );
+});
+
+const PhotosApp = () => {
+    const [selectedImage, setSelectedImage] = useState(null);
+    const [playingGifId, setPlayingGifId] = useState(null);
+
+    const handleContextMenu = (e, photo) => {
+        e.preventDefault();
+        setSelectedImage(photo);
+    };
+
+    return (
+        <div className="w-full h-full flex bg-white font-sans">
+            {/* Sidebar - Simplified */}
+            <div className="w-48 bg-gray-50 border-r border-gray-200 flex flex-col pt-4">
                 <div className="px-4 mb-4">
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Library</span>
                 </div>
                 <div className="flex flex-col gap-1 px-2">
-                    <div className="flex items-center gap-2 px-2 py-1.5 bg-blue-500 text-white rounded-md text-sm cursor-default">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-blue-500 text-white rounded-md text-sm font-medium">
                         <ImageIcon size={16} />
-                        <span>Library</span>
+                        <span>All Photos</span>
                     </div>
-                    <div className="flex items-center gap-2 px-2 py-1.5 text-gray-700 hover:bg-black/5 rounded-md text-sm cursor-default transition-colors">
-                        <Heart size={16} />
-                        <span>Favorites</span>
-                    </div>
-                    <div className="flex items-center gap-2 px-2 py-1.5 text-gray-700 hover:bg-black/5 rounded-md text-sm cursor-default transition-colors">
-                        <Users size={16} />
-                        <span>People</span>
-                    </div>
-                    <div className="flex items-center gap-2 px-2 py-1.5 text-gray-700 hover:bg-black/5 rounded-md text-sm cursor-default transition-colors">
-                        <MapPin size={16} />
-                        <span>Places</span>
-                    </div>
-                    <div className="flex items-center gap-2 px-2 py-1.5 text-gray-700 hover:bg-black/5 rounded-md text-sm cursor-default transition-colors">
-                        <Clock size={16} />
-                        <span>Recents</span>
-                    </div>
-                    <div className="flex items-center gap-2 px-2 py-1.5 text-gray-700 hover:bg-black/5 rounded-md text-sm cursor-default transition-colors">
-                        <Download size={16} />
-                        <span>Imports</span>
-                    </div>
+                </div>
+                <div className="mt-auto p-4 text-xs text-gray-400 text-center">
+                    Click to view details
                 </div>
             </div>
 
             {/* Content */}
             <div className="flex-1 bg-white overflow-y-auto p-6">
                 <div className="flex justify-between items-end mb-6">
-                    <h2 className="text-3xl font-bold text-gray-800">Library</h2>
-                    <div className="flex gap-2">
-                        <button className="text-xs font-medium px-3 py-1 bg-gray-200 rounded-full text-gray-600 hover:bg-gray-300 transition-colors">Years</button>
-                        <button className="text-xs font-medium px-3 py-1 bg-gray-200 rounded-full text-gray-600 hover:bg-gray-300 transition-colors">Months</button>
-                        <button className="text-xs font-medium px-3 py-1 bg-gray-200 rounded-full text-gray-600 hover:bg-gray-300 transition-colors">Days</button>
-                        <button className="text-xs font-medium px-3 py-1 bg-gray-800 text-white rounded-full shadow-sm">All Photos</button>
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-900">All Photos</h2>
+                        <p className="text-sm text-gray-500 mt-1">{PHOTOS.length} items</p>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-1">
-                    {photos.map((photo) => (
-                        <div key={photo.id} className="aspect-square bg-gray-100 overflow-hidden cursor-pointer group relative">
-                            <img src={photo.url} alt="Gallery" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
-                        </div>
+                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {PHOTOS.map((photo) => (
+                        <PhotoItem
+                            key={photo.id}
+                            photo={photo}
+                            onContextMenu={handleContextMenu}
+                            onClick={setSelectedImage}
+                            isPlaying={playingGifId === photo.id}
+                            onPlay={setPlayingGifId}
+                        />
                     ))}
                 </div>
-
-                <div className="mt-8 text-center text-gray-400 text-sm font-medium">
-                    {photos.length} Photos, 0 Videos
-                </div>
             </div>
+
+            {/* Full Screen Modal */}
+            {selectedImage && (
+                <div className="absolute inset-0 z-50 bg-black/95 flex flex-col items-center justify-center animate-in fade-in duration-200">
+                    <button
+                        onClick={() => setSelectedImage(null)}
+                        className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors"
+                    >
+                        <X size={24} />
+                    </button>
+
+                    <div className="w-full h-full p-8 flex items-center justify-center">
+                        <img
+                            src={selectedImage.url}
+                            alt={selectedImage.title}
+                            className="max-w-full max-h-full object-contain shadow-2xl rounded-lg"
+                        />
+                    </div>
+
+                    <div className="absolute bottom-6 left-0 right-0 text-center">
+                        <h3 className="text-white text-lg font-medium">{selectedImage.title}</h3>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
