@@ -5,7 +5,7 @@ It showcases a full‑screen desktop, draggable windows, smooth GSAP animations,
 
 ---
 
-## ✨ Features
+##  Features
 
 - **Desktop Environment** – Full‑screen background, top bar, and dock.
 - **Window Management** – Drag, resize, focus, and minimize windows using `react‑rnd`.
@@ -79,34 +79,20 @@ src/
 ## 📸 Screenshots & Media
 
 Below are some screenshots from the `proj1` folder that illustrate the UI.  Replace the placeholders with your own GIFs later.
+<img width="1914" height="1079" alt="desktop" src="https://github.com/user-attachments/assets/c31750e7-d230-4ff1-866a-0ae68104f5b4" />
 
-### Desktop Overview
+<img width="1919" height="1079" alt="games and apps" src="https://github.com/user-attachments/assets/04d6e6cb-3fd7-4fde-ace1-47eca046f1d7" />
 
-![Desktop Overview](./proj1/desktop-overview.png)
+<img width="1919" height="1079" alt="portfolio" src="https://github.com/user-attachments/assets/779108b3-96bd-44a6-8dfe-f0ce01303741" />
 
-### Finder in Action
-
-![Finder Screenshot](./proj1/finder.png)
-
-### Trash App
-
-![Trash Screenshot](./proj1/trash.png)
-
-### GIF Placeholders (add your own)
-
-> **Note:** Replace the following placeholders with actual GIF files when ready.
-
-- ![Demo GIF Placeholder](./proj1/demo-placeholder.gif)
-- ![Interaction GIF Placeholder](./proj1/interaction-placeholder.gif)
+![gif4](https://github.com/user-attachments/assets/031ecb22-d3d6-45be-86dd-e5bb7f404761)
 
 ---
 
 ## 🔗 Useful Links
 
-- **Live Demo:** https://your‑portfolio‑demo.com
-- **GitHub Repository:** https://github.com/yourusername/macos-portfolio
-- **Issue Tracker:** https://github.com/yourusername/macos-portfolio/issues
-- **Documentation:** https://your‑portfolio‑docs.com
+- **Live Demo:** [https://your‑portfolio‑demo.com](https://ashwathp-portfolio.vercel.app/)
+- **GitHub Repository:** h[ttps://github.com/yourusername/macos-portfolio](https://github.com/ash-echo/OS-Portfolio)
 
 ---
 
