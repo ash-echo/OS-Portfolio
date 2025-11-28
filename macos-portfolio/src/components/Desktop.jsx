@@ -23,8 +23,6 @@ import ResumeApp from '../apps/ResumeApp';
 import WorkApp from '../apps/WorkApp';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, UnderlineType } from 'docx';
 import { saveAs } from 'file-saver';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 
 const Desktop = () => {
     const [windows, setWindows] = useState([]);
@@ -143,7 +141,7 @@ const Desktop = () => {
     };
 
     const desktopIcons = [
-        { id: 'resume-file', title: 'Ashwath_Resume.docx', icon: 'file', type: 'resume-file' },
+        { id: 'resume-file', title: 'Ashwath_Resume.pdf', icon: 'file', type: 'resume-file' },
         { id: 'nike', title: 'Nike Ecommerce\nWebsite Application', icon: 'folder', type: 'folder' },
         { id: 'ai', title: 'AI Resume Analyzer', icon: 'folder', type: 'folder' },
         { id: 'food', title: 'Food Delivery App', icon: 'folder', type: 'folder' },
@@ -673,189 +671,18 @@ const Desktop = () => {
 
 
 
-    const handleDownloadResumePDF = async () => {
+    const handleDownloadResumePDF = () => {
         try {
             setContextMenu(null);
-
-            const pdf = new jsPDF({
-                orientation: 'portrait',
-                unit: 'mm',
-                format: 'a4'
-            });
-
-            let yPos = 20;
-            const leftMargin = 20;
-            const pageWidth = 170;
-
-            // Helper function to add text
-            const addText = (text, fontSize, isBold = false, color = [0, 0, 0], align = 'left') => {
-                pdf.setFontSize(fontSize);
-                pdf.setFont('helvetica', isBold ? 'bold' : 'normal');
-                pdf.setTextColor(color[0], color[1], color[2]);
-                if (align === 'center') {
-                    pdf.text(text, 105, yPos, { align: 'center' });
-                } else {
-                    pdf.text(text, leftMargin, yPos);
-                }
-                yPos += fontSize * 0.5;
-            };
-
-            const addSpace = (space) => {
-                yPos += space;
-            };
-
-            // Name and Title
-            addText('ASHWATH', 24, true, [0, 0, 0], 'center');
-            addText('Full Stack Developer', 14, false, [107, 114, 128], 'center');
-            addSpace(8);
-
-            // Contact Info
-            pdf.setFontSize(10);
-            pdf.setTextColor(107, 114, 128);
-            pdf.text('Email: ashwath@example.com  |  Phone: +1 (555) 123-4567', 105, yPos, { align: 'center' });
-            yPos += 4;
-            pdf.text('Location: San Francisco, CA  |  GitHub: github.com/ash-echo', 105, yPos, { align: 'center' });
-            yPos += 4;
-            pdf.text('LinkedIn: linkedin.com/in/ashwath', 105, yPos, { align: 'center' });
-            yPos += 10;
-
-            // Line separator
-            pdf.setDrawColor(229, 231, 235);
-            pdf.line(leftMargin, yPos, 190, yPos);
-            yPos += 8;
-
-            // Professional Summary
-            addText('PROFESSIONAL SUMMARY', 14, true, [37, 99, 235]);
-            addSpace(2);
-            pdf.setFontSize(10);
-            pdf.setTextColor(55, 65, 81);
-            const summaryText = "Passionate Full Stack Developer with 5+ years of experience building scalable web applications. Expertise in React, Node.js, and modern web technologies. Strong problem-solving skills and commitment to writing clean, maintainable code. Proven track record of delivering high-quality projects on time and collaborating effectively with cross-functional teams.";
-            const splitSummary = pdf.splitTextToSize(summaryText, pageWidth);
-            pdf.text(splitSummary, leftMargin, yPos);
-            yPos += splitSummary.length * 5 + 6;
-
-            // Technical Skills
-            addText('TECHNICAL SKILLS', 14, true, [37, 99, 235]);
-            addSpace(2);
-            pdf.setFontSize(10);
-            pdf.setFont('helvetica', 'bold');
-            pdf.setTextColor(0, 0, 0);
-            pdf.text('Frontend:', leftMargin, yPos);
-            pdf.setFont('helvetica', 'normal');
-            pdf.setTextColor(55, 65, 81);
-            pdf.text('React, Next.js, JavaScript, TypeScript, Tailwind CSS, HTML5, CSS3', leftMargin + 22, yPos);
-            yPos += 5;
-
-            pdf.setFont('helvetica', 'bold');
-            pdf.setTextColor(0, 0, 0);
-            pdf.text('Backend:', leftMargin, yPos);
-            pdf.setFont('helvetica', 'normal');
-            pdf.setTextColor(55, 65, 81);
-            pdf.text('Node.js, Express, Python, MongoDB, PostgreSQL, REST APIs, GraphQL', leftMargin + 22, yPos);
-            yPos += 5;
-
-            pdf.setFont('helvetica', 'bold');
-            pdf.setTextColor(0, 0, 0);
-            pdf.text('Tools & DevOps:', leftMargin, yPos);
-            pdf.setFont('helvetica', 'normal');
-            pdf.setTextColor(55, 65, 81);
-            pdf.text('Git, Docker, AWS, Vercel, CI/CD, Jest, Webpack', leftMargin + 32, yPos);
-            yPos += 5;
-
-            pdf.setFont('helvetica', 'bold');
-            pdf.setTextColor(0, 0, 0);
-            pdf.text('Other:', leftMargin, yPos);
-            pdf.setFont('helvetica', 'normal');
-            pdf.setTextColor(55, 65, 81);
-            pdf.text('Agile, Scrum, UI/UX Design, Mobile Development, Responsive Design', leftMargin + 15, yPos);
-            yPos += 10;
-
-            // Work Experience
-            addText('WORK EXPERIENCE', 14, true, [37, 99, 235]);
-            addSpace(2);
-
-            // Job 1
-            addText('Senior Full Stack Developer', 12, true, [0, 0, 0]);
-            pdf.setFontSize(10);
-            pdf.setFont('helvetica', 'italic');
-            pdf.setTextColor(107, 114, 128);
-            pdf.text('Tech Company Inc.', leftMargin, yPos);
-            pdf.setFont('helvetica', 'normal');
-            pdf.text('2022 - Present', leftMargin + 40, yPos);
-            yPos += 5;
-            pdf.setTextColor(55, 65, 81);
-            pdf.text('• Led development of a React-based e-commerce platform serving 100K+ users', leftMargin + 3, yPos);
-            yPos += 4;
-            pdf.text('• Architected and implemented RESTful APIs using Node.js and Express', leftMargin + 3, yPos);
-            yPos += 4;
-            pdf.text('• Reduced page load times by 40% through code optimization and lazy loading', leftMargin + 3, yPos);
-            yPos += 4;
-            pdf.text('• Mentored 3 junior developers and conducted code reviews', leftMargin + 3, yPos);
-            yPos += 8;
-
-            // Job 2
-            addText('Full Stack Developer', 12, true, [0, 0, 0]);
-            pdf.setFontSize(10);
-            pdf.setFont('helvetica', 'italic');
-            pdf.setTextColor(107, 114, 128);
-            pdf.text('Startup Solutions', leftMargin, yPos);
-            pdf.setFont('helvetica', 'normal');
-            pdf.text('2020 - 2022', leftMargin + 40, yPos);
-            yPos += 5;
-            pdf.setTextColor(55, 65, 81);
-            pdf.text('• Built and deployed 10+ client projects using React, Node.js, and MongoDB', leftMargin + 3, yPos);
-            yPos += 4;
-            pdf.text('• Implemented responsive designs with Tailwind CSS and mobile-first approach', leftMargin + 3, yPos);
-            yPos += 4;
-            pdf.text('• Integrated third-party APIs including Stripe, Google Maps, and Auth0', leftMargin + 3, yPos);
-            yPos += 8;
-
-            // Job 3
-            addText('Junior Web Developer', 12, true, [0, 0, 0]);
-            pdf.setFontSize(10);
-            pdf.setFont('helvetica', 'italic');
-            pdf.setTextColor(107, 114, 128);
-            pdf.text('Digital Agency', leftMargin, yPos);
-            pdf.setFont('helvetica', 'normal');
-            pdf.text('2019 - 2020', leftMargin + 40, yPos);
-            yPos += 5;
-            pdf.setTextColor(55, 65, 81);
-            pdf.text('• Developed responsive websites using HTML, CSS, JavaScript, and React', leftMargin + 3, yPos);
-            yPos += 4;
-            pdf.text('• Worked on bug fixes and feature enhancements for existing applications', leftMargin + 3, yPos);
-            yPos += 10;
-
-            // Education
-            addText('EDUCATION', 14, true, [37, 99, 235]);
-            addSpace(2);
-            addText('Bachelor of Science in Computer Science', 12, true, [0, 0, 0]);
-            pdf.setFontSize(10);
-            pdf.setFont('helvetica', 'italic');
-            pdf.setTextColor(107, 114, 128);
-            pdf.text('University of Technology', leftMargin, yPos);
-            pdf.setFont('helvetica', 'normal');
-            pdf.text('2015 - 2019', leftMargin + 50, yPos);
-            yPos += 5;
-            pdf.setTextColor(55, 65, 81);
-            pdf.text('GPA: 3.8/4.0 | Dean\'s List | Computer Science Club President', leftMargin, yPos);
-            yPos += 10;
-
-            // Certifications
-            addText('CERTIFICATIONS', 14, true, [37, 99, 235]);
-            addSpace(2);
-            pdf.setFontSize(10);
-            pdf.setTextColor(55, 65, 81);
-            pdf.text('• AWS Certified Developer - Associate', leftMargin, yPos);
-            yPos += 5;
-            pdf.text('• MongoDB Certified Developer', leftMargin, yPos);
-            yPos += 5;
-            pdf.text('• React Advanced Certification', leftMargin, yPos);
-
-            pdf.save('Ashwath_Resume.pdf');
-
+            const link = document.createElement('a');
+            link.href = 'Ashwath_P Resume.pdf';
+            link.download = 'Ashwath_P Resume.pdf';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         } catch (error) {
-            console.error('PDF generation error:', error);
-            alert('Failed to generate PDF. Please try again.');
+            console.error('PDF download error:', error);
+            alert('Failed to download PDF. Please try again.');
         }
     };
 
